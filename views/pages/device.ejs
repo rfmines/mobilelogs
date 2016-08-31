@@ -1,0 +1,60 @@
+<!-- views/pages/console.ejs -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<% include ../partials/head %>
+<style>
+	 th {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+th, td {
+    padding: 5px;
+}
+</style>
+</head>
+<body class="container">
+
+	<header>
+		<% include ../partials/header %>
+	</header>
+
+	<main>
+		<div class="jumbotron">
+			<h1>Ooma Log</h1>
+			<br><br>
+			<% if (logUserSessions != undefined && logUserSessions.length > 0) { %>
+			<table style="width:100%">
+			<th>Date</th>
+			<th>Device ID</th>
+			<th>Phone Numbers</th>
+			<th>Name</th>
+			<th>Version</th>
+			<th>App Version</th>
+			<% for (var i=0; i< logUserSessions.length; i++) { %>
+			<tr>
+				<td> <%= logUserSessions[i].created_date.toISOString() %> </td>
+				<td>  <a href="/sessions/<%= logUserSessions[i].apikey %>?sessionid=<%= logUserSessions[i]._id %>&devid=<%= logUserSessions[i].devid %>&severity=-1">  <%= logUserSessions[i].devid %> </a> </td>
+				<td>  <%=  logUserSessions[i].phone_number %> </td>
+				<td>  <%=  logUserSessions[i].appName %> </td>
+				<td> <%= logUserSessions[i].osVersion %> </td>
+				<td> <%= logUserSessions[i].appVersion %> </td>
+			</tr>
+			<% } %>
+
+			</table>
+			<% } %>
+
+			<br>
+			<a href="/sessions/<%= apikey %>?page=<%=parseInt(page,10)-1%>&limit=<%=limit%> "> Prev </a> <a href="/sessions/<%= apikey %>?page=<%=parseInt(page,10)+1%>&limit=<%=limit%>  "> Next </a>
+		</div>
+	</main>
+
+	<footer>
+		<% include ../partials/footer %>
+	</footer>
+	
+</body>
+</html>

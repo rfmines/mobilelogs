@@ -1,0 +1,92 @@
+<!-- views/pages/console.ejs -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<% include ../partials/head %>
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> 
+
+<script>
+
+function delapp(appkey) {
+
+        $("#message").empty();
+        var url = "/api/v1/app/"+appkey;
+
+		var jxhr = $.ajax({
+		  type : "DELETE",
+		  url : url,
+		  data : "",
+		  dataType: "json"
+		  }).done(function(data) {
+		     if(data.status==='success') {
+                window.location.href="/console";
+            } else {
+              console.log('message ', data.message);
+            }
+		  }).fail(function(jqXHR, textStatus, error) {
+
+            if	(jqXHR.status != 200 || jqXHR.status != 201) {
+            	console.log('error message ', jqXHR.responseJSON.message);
+              return;
+            }
+		});
+
+    };
+</script>
+
+<style>
+
+div button {
+    float: right;
+    margin-right:10px;
+
+}
+</style>
+</head>
+<body class="container">
+
+	<header>
+		<% include ../partials/header %>
+	</header>
+
+	<main>
+		<div class="jumbotron">
+			<h1>OomaMobile Log Server</h1>
+			<br><br>
+			<div>
+			<button style="float: left;" 	class="btn btn-default" id="newapp" name="newapp" onclick="window.open('/newapp', '_self');";> New App </button>
+			</div>
+			
+			<br><br>
+			<div> <font color="red"><span id="message"></span></font></div>
+			
+			<table style="width:100%">
+			<th>Name</th>
+			<th>OS</th>
+			<th>API Key</th>
+			<th></th>
+			<% if (logUserApps != undefined && logUserApps.length > 0) { %>
+			<% for (var i=0; i<logUserApps.length; i++) { %>
+				<div>
+				<tr>
+				<td> <a href="/devices/<%= logUserApps[i].apikey%>?severity=-1&today_only=yes "> <%= logUserApps[i].name %> <%= logUserApps[i].type %> </a> </td>
+				<td> <%= logUserApps[i].os %> </td>
+				<td> <a href="/devices/<%= logUserApps[i].apikey%>?severity=-1&today_only=yes "><%= logUserApps[i].apikey%> </a></td>
+				<td> <button class="btn btn-default" id="delete" name="delete" onclick="delapp('<%= logUserApps[i].apikey %>')";> Delete </button> <div style="clear:both;"></div> </td>
+
+				</tr>
+				</div>
+			<% } %>
+			<% } %>
+			</table>
+		</div>
+	</main>
+
+	<footer>
+		<% include ../partials/footer %>
+	</footer>
+	
+</body>
+</html>

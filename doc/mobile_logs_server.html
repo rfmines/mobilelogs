@@ -1,0 +1,353 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<style>
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote {
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: "Helvetica Neue", Helvetica, "Hiragino Sans GB", Arial, sans-serif;
+    font-size: 13px;
+    line-height: 18px;
+    color: #737373;
+    background-color: white;
+    margin: 10px 13px 10px 13px;
+}
+table {
+	margin: 10px 0 15px 0;
+	border-collapse: collapse;
+}
+td,th {	
+	border: 1px solid #ddd;
+	padding: 3px 10px;
+}
+th {
+	padding: 5px 10px;	
+}
+
+a {
+    color: #0069d6;
+}
+a:hover {
+    color: #0050a3;
+    text-decoration: none;
+}
+a img {
+    border: none;
+}
+p {
+    margin-bottom: 9px;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: #404040;
+    line-height: 36px;
+}
+h1 {
+    margin-bottom: 18px;
+    font-size: 30px;
+}
+h2 {
+    font-size: 24px;
+}
+h3 {
+    font-size: 18px;
+}
+h4 {
+    font-size: 16px;
+}
+h5 {
+    font-size: 14px;
+}
+h6 {
+    font-size: 13px;
+}
+hr {
+    margin: 0 0 19px;
+    border: 0;
+    border-bottom: 1px solid #ccc;
+}
+blockquote {
+    padding: 13px 13px 21px 15px;
+    margin-bottom: 18px;
+    font-family:georgia,serif;
+    font-style: italic;
+}
+blockquote:before {
+    content:"\201C";
+    font-size:40px;
+    margin-left:-10px;
+    font-family:georgia,serif;
+    color:#eee;
+}
+blockquote p {
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 18px;
+    margin-bottom: 0;
+    font-style: italic;
+}
+code, pre {
+    font-family: Monaco, Andale Mono, Courier New, monospace;
+}
+code {
+    background-color: #fee9cc;
+    color: rgba(0, 0, 0, 0.75);
+    padding: 1px 3px;
+    font-size: 12px;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+}
+pre {
+    display: block;
+    padding: 14px;
+    margin: 0 0 18px;
+    line-height: 16px;
+    font-size: 11px;
+    border: 1px solid #d9d9d9;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+pre code {
+    background-color: #fff;
+    color:#737373;
+    font-size: 11px;
+    padding: 0;
+}
+sup {
+    font-size: 0.83em;
+    vertical-align: super;
+    line-height: 0;
+}
+* {
+	-webkit-print-color-adjust: exact;
+}
+@media screen and (min-width: 914px) {
+    body {
+        width: 854px;
+        margin:10px auto;
+    }
+}
+@media print {
+	body,code,pre code,h1,h2,h3,h4,h5,h6 {
+		color: black;
+	}
+	table, pre {
+		page-break-inside: avoid;
+	}
+}
+</style>
+<title>Mobile Logs Server</title>
+
+</head>
+<body>
+<h1>Mobile Logs Server</h1>
+
+<p>October 8, 2015</p>
+
+<p>Yeffry Zakizon</p>
+
+<p>Mobile logs server collects and save Ooma Mobile debug logs and events.</p>
+
+<p>We have one dev server and one production server located at Ooma's HQ.</p>
+
+<ul>
+<li>Dev server: http-log.corp.ooma.com</li>
+<li>Production server: mobilelogs.ooma.com</li>
+</ul>
+
+
+<p>To access the website UI you need to signup and use invitation code <strong>!ooma1234@</strong>. This invitation code should be keep remain secret as other people might signup to this service.</p>
+
+<p><img src="mobilelogs.png" alt="image" /></p>
+
+<h2>Mobile Device Use Case Diagram</h2>
+
+<p><img src="mobilelogs_flowchart.jpg" alt="image" /></p>
+
+<h2>Users Device Use Case Diagram</h2>
+
+<p><img src="mobilelogs_user_usecasexml.jpg" alt="image" /></p>
+
+<h2>Installation</h2>
+
+<p>The server side code can be downloaded from perforce //internal/software/mobile/ServerSide/...</p>
+
+<h3>Software Needed</h3>
+
+<ul>
+<li>Nginx ~> v1.9.2</li>
+<li>nodejs &amp; npm ~> v0.10.33</li>
+<li>mongodb ~>3.0</li>
+</ul>
+
+
+<h4>Nginx</h4>
+
+<p>Nginx act as reverse proxy server and SSL termination. SSL certificate must be used. An example of nginx.conf is available in doc directory.</p>
+
+<h4>MongoDB</h4>
+
+<p>A database user must be created so the nodejs app can connect to MongoDB. Currently there are 2 databases that is required:
+- applog db. This is the main database
+- express db. Use to store http sessions.</p>
+
+<pre><code>use applog;
+db.createUser( { user: "applog", pwd: "ooma123", roles: [ {role: "readWrite", db: "applog"}] });
+
+use express;
+db.createUser( { user: "express", pwd: "ooma123", roles: [ {role: "userAdmin", db: "express"}]});
+</code></pre>
+
+<h4>Nodejs App</h4>
+
+<p>Node modules binary is built for linux Scientific Linux 6.4 with kernel 2.6.34. This is OS that Ooma's supported. If you use different OS, you need to be delete all files in directory node_modules and rebuild.</p>
+
+<pre><code>rm -rf node_modules/*
+npm install
+</code></pre>
+
+<p>To start the nodejs app run</p>
+
+<pre><code>Nodejs index.js
+</code></pre>
+
+<p>or</p>
+
+<pre><code>npm start
+</code></pre>
+
+<h2>API</h2>
+
+<h3><span id="createsession">Create Session (/api/v1/session)</span></h3>
+
+<h4>Description:</h4>
+
+<p>Create temporary session, output key is used to validate request input body.</p>
+
+<h4>input:</h4>
+
+<ul>
+<li><strong>apikey (String)</strong> : apikey</li>
+<li><strong>devid (String)</strong> : Device id</li>
+<li><strong>created_date (Date)</strong></li>
+<li>os (String) : For example: IOS, ANDROID, WP, BLACKBERRY</li>
+<li>devtype (String) : For Example [iPhone 5s, iPhone 5c, iPhone 6, Nexus 6, galaxy 6]</li>
+<li>devManufacturer (String) : For example //[Apple, Samsung, HTC]</li>
+<li>osVersion (String): Device operating system version for example:  8.3, 5.2</li>
+</ul>
+
+
+<h4>output:</h4>
+
+<ul>
+<li>sessionid (String) : Used when upload log or event</li>
+</ul>
+
+
+<h4>method:</h4>
+
+<ul>
+<li>POST</li>
+</ul>
+
+
+<h3><span id="savelog">Save log (/api/v1/log)</span></h3>
+
+<h4>Description:</h4>
+
+<p>Upload log to mobilelog server</p>
+
+<h4>input:</h4>
+
+<ul>
+<li><strong>apikey (String)</strong> : apikey</li>
+<li><strong>sessionid (String)</strong> : Session id from create session</li>
+<li><strong>devid (String)</strong> : Device id</li>
+<li>data (log objects) : Array of of log objects</li>
+</ul>
+
+
+<p>log objects:</p>
+
+<pre><code>        [{
+            level: int,
+            log: String,
+            processid: String,
+            tag: String,
+            phone_number: String,
+            phone_ext: String,
+            local_ip: String, //Local ip address of device
+            client_date: date //Local date of device
+        }];
+</code></pre>
+
+<h4>methods:</h4>
+
+<ul>
+<li>POST</li>
+</ul>
+
+
+<h3><span id="saveevent">Save event (/api/v1/event)</span></h3>
+
+<h4>Description:</h4>
+
+<p>Upload events to mobilelog server</p>
+
+<h4>input:</h4>
+
+<ul>
+<li><strong>apikey (String)</strong> : apikey</li>
+<li><strong>sessionid (String)</strong> : Session id from create session</li>
+<li><strong>devid (String)</strong> : Device id</li>
+<li>data (event objects) : Array of of log objects</li>
+</ul>
+
+
+<p>event objects:</p>
+
+<pre><code>        [{
+            event_name: String,
+            event_data: Event data object,
+            processid: String,
+            tag: String,
+            phone_number: String,
+            phone_ext: String,
+            local_ip: String, //Local ip address of device
+            client_date: date //Local date of device
+        }];
+</code></pre>
+
+<p>event data object:</p>
+
+<pre><code>    { 
+        action: String,
+        label: String,
+        value: String
+    }
+</code></pre>
+
+<h4>methods:</h4>
+
+<ul>
+<li>POST</li>
+</ul>
+
+</body>
+</html>

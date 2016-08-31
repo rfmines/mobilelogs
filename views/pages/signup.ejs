@@ -1,0 +1,45 @@
+
+<!-- views/pages/signup.ejs -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Sign up</title>
+    <% include ../partials/head %>
+    <link href="/static/css/signin.css" rel="stylesheet">
+	<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script> 
+
+</head>
+<body class="container">
+
+	<header>
+		<% include ../partials/header %>
+	</header>
+
+	<main>
+	<div class="container">
+    
+
+    <form class="form-signin" method="POST" action="/signup">
+        <div> <font color="red"><span id="message"><h4><%= message %></h4></span></font></div>
+        <h2 class="form-signin-heading">Sign up</h2>
+        <label for="Full name" class="sr-only">Full name</label>
+        <input type="text" id="username" name="username" class="form-control" placeholder="Full name" required autofocus>
+        <label for="email" class="sr-only">Email address</label>
+        <input type="email" id="username" name="email" class="form-control" placeholder="Email address" required autofocus>
+        <label for="password" class="sr-only">Password</label>
+        <input type="password" id="password" name="password" class="form-control" placeholder="Password" required>
+        <label for="code" class="sr-only">Invitation Code</label>
+        <input type="text" id="code" name="code" class="form-control" placeholder="Invitation Code" required>
+        <button class="btn btn-lg btn-primary btn-block"  id="submit">Sign in</button>
+      </div>
+    </form>
+    </div> <!-- /container -->
+	</main>
+
+	<footer>
+		<% include ../partials/footer %>
+	</footer>
+	
+</body>
+</html>
