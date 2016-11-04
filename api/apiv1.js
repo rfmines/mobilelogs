@@ -591,72 +591,55 @@ function createApp(req, res, next) {
  */
 function createAppInternal(req, cb) {
 
-  var groupid = req.params.groupid;
-  var userid = req.body.userid | req.query.userid;
+	var groupid = req.params.groupid;
+	var userid = req.body.userid || req.query.userid;
 
-  if (_E(userid) || _E(groupid)) {
-    logger.error('Invalid userid or groupid');
-    if (cb) {
-      cb(new Error('Invalid userid or groupid'))
-    }
-    ;
-    return;
-  }
-  ;
+	if (_E(userid) || _E(groupid)) {
+		logger.error('Invalid userid or groupid');
+		if (cb) { cb(new Error('Invalid userid or groupid'))};
+		return;
+	};
 
-  var appname = req.body.appname || req.query.appname;
-  var apptype = req.body.apptype || req.query.apptype;
-  var os = req.body.os || req.query.os;
-  ;
+	var appname = req.body.appname || req.query.appname;
+	var apptype = req.body.apptype || req.query.apptype;
+	var os = req.body.os || req.query.os;;
 
-  if (_E(appname) || _E(apptype) || _E(os)) {
-    logger.error('Invalid params');
-    if (cb) {
-      cb(new Error('Invalid params'))
-    }
-    ;
-    return;
-  }
-  ;
+	if (_E(appname) || _E(apptype) || _E(os)) {
+		logger.error('Invalid params');
+		if (cb) { cb(new Error('Invalid params'))};
+		return;
+	};
 
-  try {
-    var ObjectId = require('mongoose').Types.ObjectId;
-    var logUserApp = new LogUserApp({
-      groupid: new ObjectId(groupid),
-      userid: new ObjectId(userid),
-      name: appname,
-      type: apptype,
-      os: os,
-      apikey: uuid.v1()
-    });
+	try {
+		var ObjectId = require('mongoose').Types.ObjectId;
+		var logUserApp = new LogUserApp({
+			groupid: new ObjectId(groupid),
+			userid: new ObjectId(userid),
+			name: appname,
+			type: apptype,
+			os: os,
+			apikey: uuid.v1()
+		});
 
-    logUserApp.save(function (err, userApp) {
-      if (err) {
-        logger.error('Unable to create new app %s. error: %s', appname, err.message);
-        if (cb) {
-          cb(err);
-        }
-        ;
-        return;
-      }
-      ;
+		logUserApp.save(function(err, userApp) {
+			if (err) {
+				logger.error('Unable to create new app %s. error: %s', appname, err.message);
+				if (cb) {cb(err);};
+				return;
+			};
 
-      logger.debug('create new app success: ', userApp);
-      if (cb) {
-        cb(null, userApp)
-      }
-      ;
-      //res.status(201).json({status: 'success', data: { id: userApp._id, apikey: userApp.apikey}});
-    });
-  } catch (e) {
-    logger.error('createUser exception occured: ', e);
-    if (cb) {
-      var error = new Error(e.message);
-      error.code = 500;
-      cb(error, null);
-    }
-    ;
-  }
+			logger.debug('create new app success: ', userApp);
+			if (cb) { cb(null, userApp)};
+			//res.status(201).json({status: 'success', data: { id: userApp._id, apikey: userApp.apikey}});
+		});
+	} catch (e) {
+		logger.error('createUser exception occured: ', e);
+		if (cb) {
+				var error = new Error(e.message);
+				error.code = 500;
+				cb(error, null);
+			};
+	}
 
 }
 
