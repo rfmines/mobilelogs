@@ -523,7 +523,7 @@ function createApp(req, res, next) {
 function createAppInternal(req, cb) {
 
 	var groupid = req.params.groupid;
-	var userid = req.body.userid | req.query.userid;
+	var userid = req.body.userid || req.query.userid;
 
 	if (_E(userid) || _E(groupid)) {
 		logger.error('Invalid userid or groupid');
