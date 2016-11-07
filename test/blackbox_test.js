@@ -282,6 +282,47 @@ describe('Testing User. ', function() {
     }); 
   });
 
+  it('Get log event types data', function(done){
+    var body = {
+      f: newApp.apikey,
+      h: 'abcd2134',
+      s: newSession._id,
+      p: 2658426895,
+      d: [{
+        c: 1478253121,
+        v: 4,
+        l: 'Log test 1'
+      },{
+        c: 1478253121,
+        v: 5,
+        l: 'Log test 2'
+      }]
+    };
+
+    var options = {
+      uri: URL + '/eventtypes',
+      method: "GET",
+      headers: { 'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'authorization': 'authToken '+ newUser.data.authToken },
+      json: body
+    };
+
+    request(options, function(error, res, body) {
+      if (error) {
+        console.error('Test save log Error: ',  error.message);
+        done();
+        return;
+      }
+
+      console.log('Test save log body: ',  body);
+      assert.equal(null, error);
+      assert.equal(200, res.statusCode);
+      assert.equal('success', body.status);
+
+      done();
+    });
+  });
 
   it('Save log data', function(done){
     var body = {

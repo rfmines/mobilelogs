@@ -13,8 +13,9 @@ db.on('error', function (err) {
 });
 
 db.on('connected', function () {
-  logger.info('Database connected ');
+  logger.info('Database connected ' + 'mongodb://' + db_config.host + '/'+ db_config.db, {user: db_config.user});
 })
+
 db.on('disconnected', function () {
   logger.info('Database disconnected');
 })
@@ -82,11 +83,6 @@ var logSessionSchema = Schema({
   appVersion: String,
   appName: String,
   remote_ip: String
-});
-
-var eventTypeDictionarySchema = Schema({
-  id: String,
-  value: String
 });
 
 var logDataSchema = Schema({
@@ -159,43 +155,6 @@ var eventTypeDictionarySchema = Schema({
   name: String
 });
 
-var EventTypeDictionary = mongoose.model('EventTypeDictionary', eventTypeDictionarySchema);
-
-eventTypeDictionarySchema.methods.getEventType = function (id) {
-  EventTypeDictionary.findOne({'id': id}, 'value', function (err, event) {
-    if (err) throw (err);
-    return (event.value)
-  })
-}
-
-eventTypeDictionarySchema.methods.addEventType = function (event) {
-  EventTypeDictionary.save(event, function (err) {
-    if (err) throw (err);
-    return (true)
-  })
-}
-
-eventTypeDictionarySchema.methods.removeEventType = function (id) {
-  EventTypeDictionary.findOneAndRemove({field: 'newValue'}, function (err) {
-    if (err) throw (err);
-    return (true)
-  })
-}
-
-eventTypeDictionarySchema.methods.listEventTypes = function (id) {
-  EventTypeDictionary.find().find(function (err, events) {
-    if (err) throw (err);
-    return (events)
-  })
-}
-
-eventTypeDictionarySchema.methods.initEventType = function (id) {
-  EventTypeDictionary.findOne({'id': id}, 'value', function (err, event) {
-    if (err) throw (err);
-    return (event.value)
-  })
-}
-
 var LogFile = mongoose.model('LogFile', logfilesSchema);
 var LogFileSession = mongoose.model('LogFileSession', logfileSessionsSchema);
 var LogUser = mongoose.model('User', userSchema);
@@ -206,10 +165,10 @@ var LogEvent = mongoose.model('Event', logEventSchema);
 var LogGroup = mongoose.model('Group', groupSchema);
 var LogAuthLim = mongoose.model('AuthLimitation', Non_Auth_User_Limitation_Schema);
 var LogValToken = mongoose.model('ValidToken', valid_tokens_Schema)
+var EventTypeDictionary = mongoose.model('EventTypeDictionary', eventTypeDictionarySchema);
 
 module.exports.log_db = db;
 module.exports.LogFile = LogFile;
-module.exports.EventTypeDictionary = EventTypeDictionary;
 module.exports.LogFileSession = LogFileSession;
 module.exports.LogUser = LogUser;
 module.exports.LogUserApp = LogUserApp;
@@ -219,3 +178,38 @@ module.exports.LogEvent = LogEvent;
 module.exports.LogGroup = LogGroup;
 module.exports.LogAuthLim = LogAuthLim;
 module.exports.LogValToken = LogValToken;
+
+module.exports.getEventType = function (id) {
+  EventTypeDictionary.findOne({'id': id}, 'value', function (err, event) {
+    if (err) throw (err);
+    return (event.value)
+  })
+}
+
+module.exports.addEventType = function (event) {
+  EventTypeDictionary.save(event, function (err) {
+    if (err) throw (err);
+    return (true)
+  })
+}
+
+module.exports.removeEventType = function (id) {
+  EventTypeDictionary.findOneAndRemove({field: 'newValue'}, function (err) {
+    if (err) throw (err);
+    return (true)
+  })
+}
+
+module.exports.listEventTypes = function () {
+  EventTypeDictionary.find().find(function (err, events) {
+    if (err) throw (err);
+    return (events)
+  })
+}
+
+module.exports.initEventType = function (id) {
+  EventTypeDictionary.findOne({'id': id}, 'value', function (err, event) {
+    if (err) throw (err);
+    return (event.value)
+  })
+}
