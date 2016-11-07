@@ -87,13 +87,11 @@ app.delete('/app/:apikey', checkAuth, deleteApp);
 app.post('/session', createSession);
 app.post('/log', saveLogData);
 app.post('/event', saveEvent);
-//app.post('/eventType', eventType);
-//app.delete('/eventType', eventType);
-app.get('/eventType', getEventType);
-app.get('/eventTypes');
 
 
 app.get('/log/:devid', checkAuth, getLogData);
+
+
 
 function index(req, res, next) {
   logger.debug('api index');
@@ -1201,7 +1199,7 @@ function getDevicesInternal(req, cb) {
     return;
   }
 }
-/*	POST API Save log to database
+/*	POST API g to database
  * 
  *  input body:
  *  {
@@ -1314,54 +1312,6 @@ function saveLogData(req, res, next) {
   }
 }
 
-function getEventType(req, res, next) {
-  var apiKey = req.body.f;
-  var sessionId = req.body.s;
-  var eventId = req.body.h;
-
-  if (_E(apiKey) || _E(sessionid) || _E(eventid)) {
-    res.status(403).json({status: 'error', message: 'Invalid params'});
-    return;
-  }
-
-  try {
-    eventName = eventTypeDictionaySchema.methods.getEventType(eventId)
-    if (err) {
-      res.status(403).json({status: 'error', message: 'Invalid session id', description: err.name});
-      return;
-    } else {
-      res.status(200).json({status: 'success', name: eventName});
-    }
-  } catch (e) {
-    logger.warn('getEventType error ', e);
-    res.status(500).json({status: 'error', message: e.message});
-  }
-}
-
-function getEventTypes(req, res, next) {
-  var apiKey = req.body.f;
-  var sessionId = req.body.s;
-  var eventId = req.body.h;
-
-
-  if (_E(apiKey) || _E(sessionid) || _E(eventid)) {
-    res.status(403).json({status: 'error', message: 'Invalid params'});
-    return;
-  }
-
-  try {
-    var eventTypes = eventTypeDictionaySchema.methods.listEventTypes(eventId)
-    if (err) {
-      res.status(403).json({status: 'error', message: 'Invalid session id', description: err.name});
-      return;
-    } else {
-      res.status(200).json({status: 'success', name: eventTypes});
-    }
-  } catch (e) {
-    logger.warn('getEventType error ', e);
-    res.status(500).json({status: 'error', message: e.message});
-  }
-}
 
 /*
  *  input body:
