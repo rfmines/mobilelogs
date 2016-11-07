@@ -54,6 +54,16 @@ describe('Testing User. ', function() {
   var groupid = null;
   var userid = null;
 
+  before(function (done) {
+    var db_config = require('../db/config')["test"].database;
+    mongoose.connect('mongodb://' + db_config.host + '/'+ db_config.db, function(){
+      mongoose.connection.db.dropDatabase(function() {
+        done();
+      });
+    });
+  });
+
+
   it('Test user creation', function(done) {
     var body = {
       username: "Test user",

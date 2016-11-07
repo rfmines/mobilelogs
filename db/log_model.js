@@ -4,6 +4,9 @@ var logger = log4js.getLogger('applog');
 
 var db = mongoose.connection;
 
+var env = process.env.NODE_ENV || 'production';
+var config = require('./config')[env];
+var db_config = config.database;
 
 db.on('error', function(err) { logger.fatal('log_model error connecting to mongodb: ', err)});
 
@@ -14,7 +17,7 @@ db.on('disconnected', function() {
 	logger.info('Database disconnected');
 })
 
-mongoose.connect('mongodb://127.0.0.1/applog', {user: "applog", pass: 'ooma123'});
+mongoose.connect('mongodb://' + db_config.host + '/'+ db_config.db, {user: db_config.user, pass: db_config.password});
 
 var Schema = mongoose.Schema;
 var ObjectId = Schema.ObjectId;
