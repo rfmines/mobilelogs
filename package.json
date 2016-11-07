@@ -32,5 +32,9 @@
     "qs": "^3.1.0",
     "request": "^2.57.0",
     "shortid": "^2.2.2"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.18.0",
+    "babel-preset-es2016": "^6.16.0"
   }
 }
