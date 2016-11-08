@@ -13,6 +13,7 @@ var session = require('express-session');
 var cookieParser = require('cookie-parser');
 var MongoStore = require('connect-mongo')(session);
 
+
 var log4js_syslog_appender = require('./util/log4js-syslog-appender');
 
 var log4js = require('log4js');
@@ -22,7 +23,7 @@ if (config.syslog !== undefined) {
 	var sylog_appender = '../../../../util/log4js-syslog-appender';
 	log4js.loadAppender(sylog_appender);
 	log4js.addAppender(log4js.appenders[sylog_appender](config.syslog.appenders[0]), instanceName);
-	console.log('KazooProxy logging to syslog');
+	console.log('mobile logs logging to syslog');
 }  
 
 if (config.log_file !== undefined) {
@@ -101,13 +102,16 @@ app.get('/console', routes.console);
 app.get('/sessions/:apikey', routes.sessions);
 app.get('/devices/:apikey', routes.devices);
 app.get('/log/:apikey', routes.log);
+
 app.get('/newapp', routes.newapp);
 app.post('/newapp', routes.newapp);
 
 app.post('/login', routes.login);
 app.post('/signup', routes.signup);
 
-// API routing
+const apiEventTypes = require('./routes/event_types');
+app.use('/eventtypes', apiEventTypes)
+
 var apiv1 = require('./api/apiv1');
 app.use('/api/v1', apiv1);
 
@@ -133,6 +137,8 @@ var shutdown = function(server) {
 	  }, 33*1000);
 }
 
+console.log(app._router.stack)
+console.log('starting app')
 var http_port = process.env.APPLOG_PORT || process.env.PORT || config.local.http_port || 8000;
 
 var server = app.listen(http_port, function() {
