@@ -111,6 +111,9 @@ app.post('/signup', routes.signup);
 var apiv1 = require('./api/apiv1');
 app.use('/api/v1', apiv1);
 
+var event_names = require('./routes/event_names');
+app.use('/api/v1/event_names', event_names);
+
 // Catch errors
 app.use(errorHandlers.error);
 app.use(errorHandlers.notFound);
