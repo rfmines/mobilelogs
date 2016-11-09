@@ -9,32 +9,33 @@
  */
 "use strict";
 
-var config = require('../config');
 var request = require('request');
-var assert = require('assert');
-var util = require('util');
-var qs = require('qs');
-var qss = qs.stringify;
 var mongoose = require('mongoose');
+var request = require('supertest');
+var chai = require('chai');
 
+var assert = chai.assert;
+var should = chai.should();
+
+var config = require('../config');
 var eventTypeModel = require('../db/event_type_model');
 
-
-var URL = "http://127.0.0.1:8000";
+process.env.NODE_ENV = 'test';
+var app = require('../server');
 
 describe('Event Type', function() {
 
   var newUser = null;
   var groupid = null;
   var userid = null;
-  var eventName = null;
+  var eventType = null;
 
   before(function (done) {
     var db_config = require('../db/config')["test"].database;
     mongoose.connect('mongodb://' + db_config.host + '/' + db_config.db, function () {
       mongoose.connection.db.dropDatabase(function () {
 
-        eventTypeModel.create( {key: 99999, Type: 'Undefined'} ).then(function (item) {
+        eventTypeModel.create( {id: 99999, name: 'Undefined'} ).then(function (item) {
           eventType = item;
           done();
         });
@@ -49,22 +50,18 @@ describe('Event Type', function() {
       email: "user@gmail.com",
       password: "ooma123"
     };
-    var options = {
-      uri: URL + '/api/v1/user',
-      method: "POST",
-      json: body
-    };
-    request(options, function (error, res, body) {
-      if (error) {
-        console.error('Test user creation Error: s', error.message);
-        done();
-        return;
-      }
-      assert.equal(null, error);
-      assert.equal(201, res.statusCode);
 
-      done();
-    });
+    request(app)
+      .post('/api/v1/user')
+      .set('Content-Type', 'application/json')
+      .send( body )
+      .expect('Content-Type', /json/)
+      .expect(201)
+      .end(function(err, res) {
+        should.not.exist( err );
+        done();
+      });
+
   });
 
   it('user authentication', function (done) {
@@ -72,158 +69,109 @@ describe('Event Type', function() {
       username: "user@gmail.com",
       password: "ooma123"
     };
-    var options = {
-      uri: URL + '/api/v1/auth',
-      method: "GET",
-      json: body,
-      headers: {'Content-Type': 'application/json'}
-    };
 
-    request(options, function (error, res, body) {
-      if (error) {
-        console.error('Test user authentication Error: ', error.message);
+    request(app)
+      .get('/api/v1/auth')
+      .set('Content-Type', 'application/json')
+      .send( body )
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .end(function(err, res) {
+        should.not.exist( err );
+
+        newUser = res.body;
+        userid = newUser.data._id;
+        groupid = newUser.data.groups[0];
         done();
-        return;
-      }
-      console.log('Test user auth: ', body);
-      assert.equal(null, error);
-      assert.equal(200, res.statusCode);
-      newUser = body;
-      userid = newUser.data._id;
-      groupid = newUser.data.groups[0];
-      //console.log("groupid", groupid);
-      //console.error('Test user authentication : ', newUser);
-      done();
-    });
+      });
   });
-
 
   describe('Get all', function(){
     it('should return event Types', function (done) {
+      request(app)
+        .get('/api/v1/event_types')
+        .set('Content-Type',  'application/json')
+        .set('Accept',        'application/json')
+        .set('authorization', 'authToken ' + newUser.data.authToken)
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          var body = res.body;
+          should.not.exist( err );
+          assert.equal( res.statusCode, 200 );
 
-      var options = {
-        uri: URL + '/api/v1/event_types',
-        method: "GET",
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'authorization': 'authToken ' + newUser.data.authToken
-        }
-      };
-
-      request(options, function (error, res, body) {
-        if (error) {
-          console.error('Test save log Error: ', error.message);
+          assert.equal( body.status, 'success' );
+          assert.lengthOf( body.event_types, 1 );
           done();
-          return;
-        }
+        });
 
-        //console.log('Get event types return : ', body);
-        assert.equal(null, error);
-        assert.equal(200, res.statusCode);
-        body = JSON.parse( body ) ;
-
-        assert.equal('success', body.status);
-        assert.equal(1, body.event_types.length);
-
-        done();
-      });
     });
   });
 
   describe('Get', function(){
     it('should return event type by id', function (done) {
-      var options = {
-        uri: URL + '/api/v1/event_types/' + eventType._id,
-        method: "GET",
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'authorization': 'authToken ' + newUser.data.authToken
-        }
-      };
-
-      request(options, function (error, res, body) {
-        if (error) {
-          console.error('Test save log Error: ', error.message);
+      request(app)
+        .get('/api/v1/event_types/' + eventType._id)
+        .set('Content-Type',  'application/json')
+        .set('Accept',        'application/json')
+        .set('authorization', 'authToken ' + newUser.data.authToken)
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          var body = res.body;
+          should.not.exist( err );
+          assert.equal(200, res.statusCode);
+          assert.equal( body.status, 'success' );
+          should.exist( body.event_type );
           done();
-          return;
-        }
+        });
 
-        //console.log('Get event type by id return : ', body);
-        assert.equal(null, error);
-        assert.equal(200, res.statusCode);
-        body = JSON.parse( body ) ;
-        assert.equal('success', body.status);
-
-        done();
-      });
     });
   });
 
   describe('Post', function(){
     it('should create event type', function (done) {
 
-      var options = {
-        uri: URL + '/api/v1/event_types',
-        method: "POST",
-        json: {
-          event_type: {key: 0, type: 'APP_START'}
-        },
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'authorization': 'authToken ' + newUser.data.authToken
-        }
-      };
-
-      request(options, function (error, res, body) {
-        if (error) {
-          console.error('Test save log Error: ', error.message);
+      request(app)
+        .post('/api/v1/event_types')
+        .set('Content-Type',  'application/json')
+        .set('Accept',        'application/json')
+        .set('authorization', 'authToken ' + newUser.data.authToken)
+        .send({ event_type: {id: 0, name: 'APP_START'} })
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          var body = res.body;
+          should.not.exist( err );
+          assert.equal( res.statusCode, 200 );
+          assert.equal( body.status, 'success' );
           done();
-          return;
-        }
+        });
 
-        //console.log('Create event types return : ', body);
-        assert.equal(null, error);
-        assert.equal(200, res.statusCode);
-        assert.equal('success', body.status);
-
-        done();
-      });
     });
   });
 
   describe('Update', function(){
     it('should update event type', function (done) {
+      var name = 'APP_BG';
 
-      var options = {
-        uri: URL + '/api/v1/event_types/' + eventType._id,
-        method: "PUT",
-        json: {
-          event_type: { id: '12' , name: 'APP_BG'}
-        },
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'authorization': 'authToken ' + newUser.data.authToken
-        }
-      };
-
-      request(options, function (error, res, body) {
-        if (error) {
-          console.error('Test save log Error: ', error.message);
+      request(app)
+        .put('/api/v1/event_types/' + eventType._id)
+        .set('Content-Type',  'application/json')
+        .set('Accept',        'application/json')
+        .set('authorization', 'authToken ' + newUser.data.authToken)
+        .send({ event_type: {name: name} })
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          var body = res.body;
+          should.not.exist( err );
+          assert.equal( res.statusCode, 200 );
+          assert.equal( body.status, 'success' );
+          assert.equal( body.event_type.name, name );
           done();
-          return;
-        }
+        });
 
-        //console.log('update event types return : ', body);
-        assert.equal(null, error);
-        assert.equal(200, res.statusCode);
-        assert.equal('success', body.status);
-
-        done();
-      });
     });
   });
 
@@ -231,31 +179,23 @@ describe('Event Type', function() {
   describe('Remove', function(){
 
     it('should remove event type by id', function (done) {
-      var options = {
-        uri: URL + '/api/v1/event_types/' + eventType._id,
-        method: "DELETE",
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'authorization': 'authToken ' + newUser.data.authToken
-        }
-      };
 
-      request(options, function (error, res, body) {
-        if (error) {
-          console.error('Test save log Error: ', error.message);
+      request(app)
+        .delete('/api/v1/event_types/' + eventType._id)
+        .set('Content-Type',  'application/json')
+        .set('Accept',        'application/json')
+        .set('authorization', 'authToken ' + newUser.data.authToken)
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          var body = res.body;
+          should.not.exist( err );
+          assert.equal( res.statusCode, 200 );
+          assert.equal( body.status, 'success' );
+
           done();
-          return;
-        }
+        });
 
-        //console.log('Remove event type by id return : ', body);
-        assert.equal(null, error);
-        assert.equal(200, res.statusCode);
-        body = JSON.parse( body ) ;
-        assert.equal('success', body.status);
-
-        done();
-      });
     });
 
   });

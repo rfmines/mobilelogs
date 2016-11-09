@@ -8,8 +8,7 @@
     "build":"babel -w  -d build -s  ./",
     "webpack": "webpack",
     "start": "node index.js",
-    "test_serve": "NODE_ENV=test node index.js",
-    "test": "NODE_ENV=test ./node_modules/.bin/mocha test/blackbox_test.js"
+    "test": "NODE_ENV=test ./node_modules/.bin/mocha test/"
   },
   "author": "",
   "license": "ISC",
@@ -43,7 +42,7 @@
   "devDependencies": {
     "babel-cli": "^6.18.0",
     "babel-core": "^6.18.2",
-    "nodemon": "^6.0.0",
+    "nodemon": "^1.11.0",
     "babel-loader": "^6.2.7",
     "http-server": "^0.9.0",
     "webpack": "^1.13.3",

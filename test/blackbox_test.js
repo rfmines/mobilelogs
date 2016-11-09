@@ -13,7 +13,11 @@
 
 var config = require('../config');
 var request = require('request');
+var mongoose = require('mongoose');
+var request = require('supertest');
 var assert = require('assert');
+var chai = require('chai');
+var should = chai.should();
 var util = require('util');
 var qs = require('qs');
 var qss = qs.stringify;
@@ -23,29 +27,20 @@ var LogModel = require('../db/log_model');
 var ObjectId = require('mongoose').Types.ObjectId;
 var LogLogData = LogModel.LogLogData;
 
-var URL = "http://127.0.0.1:8000";
+process.env.NODE_ENV = 'test';
+var app = require('../server');
 
 describe('Basic test', function(){
   it ('Test if applog server is running', function(done){
-    var options = {
-      uri: URL + '/check',
-      method: "GET"
-    };
 
-    request(options, function(error, res, body) {
-      if (error) {
-        console.error('Please check if applog server is running at: %s. Error: %s', URL, error.message);
+    request(app)
+      .get('/check')
+      .expect(200)
+      .end(function(err, res) {
+        should.not.exist( err );
         done();
-        process.exit(1);
-        return;
-      }
-      assert.equal(null, error);
-      assert.equal(200, res.statusCode);
-      assert.equal('200 OK\r\n', body);
+      });
 
-      done();
-
-    });
   });
 });
 
@@ -70,74 +65,59 @@ describe('Testing User. ', function() {
       email: "user@gmail.com",
       password: "ooma123"
     };
-    var options = {
-      uri: URL + '/api/v1/user',
-      method: "POST",
-      json: body,
-    };
-    request(options, function(error, res, body) {
-      if (error) {
-        console.error('Test user creation Error: s',  error.message);
-        done();
-        return;
-      }
-      assert.equal(null, error);
-      assert.equal(201, res.statusCode);
 
-      done();
-    });
+    request(app)
+      .post('/api/v1/user')
+      .set('Content-Type', 'application/json')
+      .send( body )
+      .expect('Content-Type', /json/)
+      .expect(201)
+      .end(function(err, res) {
+        should.not.exist( err );
+        done();
+      });
+
   });
 
-  it ('user authentication', function(done) {
+  it('user authentication', function (done) {
     var body = {
       username: "user@gmail.com",
       password: "ooma123"
     };
-    var options = {
-      uri: URL + '/api/v1/auth',
-      method: "GET",
-      json: body,
-      headers: {'Content-Type': 'application/json'},
-    };
 
-    request(options, function(error, res, body) {
-      if (error) {
-        console.error('Test user authentication Error: ',  error.message);
+    request(app)
+      .get('/api/v1/auth')
+      .set('Content-Type', 'application/json')
+      .send( body )
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .end(function(err, res) {
+        should.not.exist( err );
+
+        newUser = res.body;
+        userid = newUser.data._id;
+        groupid = newUser.data.groups[0];
         done();
-        return;
-      }
-      console.log('Test user auth: ',  body);
-      assert.equal(null, error);
-      assert.equal(200, res.statusCode);
-      newUser = body;
-      userid = newUser.data._id;
-      groupid = newUser.data.groups[0];
-      console.log("groupid", groupid);
-      console.error('Test user authentication : ',  newUser);
-      done();
-    });
+      });
   });
 
 
   it('user info', function(done) {
-    var options = {
-      uri: URL + '/api/v1/user/' + newUser.data._id,
-      method: "GET",
-      headers: {'Content-Type': 'application/json' , 'authorization': 'authToken '+ newUser.data.authToken }
-    };    
-    request(options, function(error, res, body) {
-      if (error) {
-        console.error('Test get user Error: ',  error.message);
+    request(app)
+      .get('/api/v1/user/' + newUser.data._id)
+      .set('Content-Type', 'application/json')
+      .set('Accept',        'application/json')
+      .set('authorization', 'authToken ' + newUser.data.authToken)
+      .expect(200)
+      .end(function(err, res) {
+        should.not.exist( err );
+
+        var user = res.body;
+        assert.equal(user.email, newUser.email);
+        assert.equal(user.username, newUser.username);
         done();
-        return;
-      }
-      var user = JSON.parse(body);
-      console.log('Test get user body: ',  user);
-      assert.equal(null, error);
-      assert.equal(200, res.statusCode);
-          
-      done();
-   });
+      });
+
   });
 
   var newApp = null;
@@ -149,96 +129,59 @@ describe('Testing User. ', function() {
       os: 'Iphone'
     };
 
-    var options = {
-      uri: URL+'/api/v1/app/' + groupid,
-      method: "POST",
-      headers: { 'Content-Type': 'application/json' , 
-                 'Accept': 'application/json', 
-                 'authorization': 'authToken '+ newUser.data.authToken },
-      json: body
-    };
-
-    request(options, function(error, res, body) {
-      if (error) {
-        console.error('Test create new app Error: ',  error.message);
+    request(app)
+      .post('/api/v1/app/' + groupid)
+      .set('Content-Type', 'application/json')
+      .set('Accept',        'application/json')
+      .set('authorization', 'authToken ' + newUser.data.authToken)
+      .send( body )
+      .expect('Content-Type', /json/)
+      .expect(201)
+      .end(function(err, res) {
+        should.not.exist( err );
+        newApp = res.body.data;
         done();
-        return;
-      }
+      });
 
-      console.log('Test create new app body: ',  body);
-      assert.equal(null, error);
-      assert.equal(201, res.statusCode);
-      assert.equal('success', body.status);
-      newApp = body.data;
-
-      done();
-    }); 
   });
 
   it('Get all apps', function(done) {
-    var options = {
-      uri: URL + '/api/v1/app/' + groupid,
-      method: "GET",
-      headers: { 'Content-Type': 'application/json',
-                 'Accept': 'application/json',
-                 'authorization': 'authToken '+ newUser.data.authToken },
-    };
 
-    request(options, function(error, res, body) {
-      if (error) {
-        console.error('Test get all apps Error: ',  error.message);
+    request(app)
+      .get('/api/v1/app/' + groupid)
+      .set('Content-Type',  'application/json')
+      .set('Accept',        'application/json')
+      .set('authorization', 'authToken ' + newUser.data.authToken)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .end(function(err, res) {
+        var app = res.body;
+        should.not.exist( err );
+        assert.equal( app.data.length, 1 );
+
+        assert.equal(app.data[0].apikey, newApp.apikey);
         done();
-        return;
-      }
+      });
 
-      var app = JSON.parse(body);
-      console.log('Test get all apps body: ',  app);
-      assert.equal(null, error);
-      assert.equal(200, res.statusCode);
-      assert.equal('success', app.status);
-      assert.notEqual(0, app.data.length);
-
-      for(var i;i<app.data.length;i++) {
-        if (app.data[i].name == newApp.name) {
-          assert.equal(app.data[i].apikey, newApp.apikey);
-        }
-      }
-
-      done();
-    }); 
   });
 
   it('Delete apps', function(done) {
-    var options = {
-      uri: URL + '/api/v1/app/' + newApp.apikey,
-      method: "DELETE",
-      headers: { 'Content-Type': 'application/json',
-                  'Accept': 'application/json',
-                  'authorization': 'authToken '+ newUser.data.authToken },
-    };
+    request(app)
+      .delete('/api/v1/app/' + newApp.apikey)
+      .set('Content-Type',  'application/json')
+      .set('Accept',        'application/json')
+      .set('authorization', 'authToken ' + newUser.data.authToken)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .end(function(err, res) {
+        var body = res.body;
+        should.not.exist( err );
+        assert.equal( res.statusCode, 200 );
+        assert.equal( body.status, 'success' );
 
-    request(options, function(error, res, body) {
-      if (error) {
-        console.error('Test Delete apps Error: ',  error.message);
         done();
-        return;
-      }
+      });
 
-      var app = JSON.parse(body);
-      console.log('Test delete apps body: ',  app);
-      assert.equal(null, error);
-      assert.equal(200, res.statusCode);
-      assert.equal('success', app.status);
-      assert.notEqual(0, app.data.length);
-
-      for(var i;i<app.data.length;i++) {
-        if (app.data[i].name == newApp.name) {
-          assert.equal(app.data[i].apikey, newApp.apikey);
-        }
-      }
-
-      done();
-    }); 
   });
 
   var newSession = null;
@@ -256,30 +199,23 @@ describe('Testing User. ', function() {
       m: 'Mobile res'
     };
 
-    var options = {
-      uri: URL + '/api/v1/session', 
-      method: "POST",
-      headers: { 'Content-Type': 'application/json',
-                 'Accept': 'application/json',
-                 'authorization': 'authToken '+ newUser.data.authToken },
-      json: body
-    };
-
-    request(options, function(error, res, body) {
-      if (error) {
-        console.error('Test create new session Error: ',  error.message);
+    request(app)
+      .post('/api/v1/session')
+      .set('Content-Type',  'application/json')
+      .set('Accept',        'application/json')
+      .set('authorization', 'authToken ' + newUser.data.authToken)
+      .send( body )
+      .expect('Content-Type', /json/)
+      .expect(201)
+      .end(function(err, res) {
+        var body = res.body;
+        should.not.exist( err );
+        assert.equal( res.statusCode, 201 );
+        assert.equal( body.status, 'success' );
+        newSession = body.data;
         done();
-        return;
-      }
-
-      console.log('Test create new session body: ',  body);
-      assert.equal(null, error);
-      assert.equal(201, res.statusCode);
-      assert.equal('success', body.status);
-      newSession = body.data;
-
-      done();
-    }); 
+      });
+ 
   });
 
   it('Get log event types data', function(done){
@@ -299,29 +235,23 @@ describe('Testing User. ', function() {
       }]
     };
 
-    var options = {
-      uri: URL + '/eventtypes',
-      method: "GET",
-      headers: { 'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'authorization': 'authToken '+ newUser.data.authToken },
-      json: body
-    };
+    request(app)
+      .get('/api/v1/event_types')
+      .send(body)
+      .set('Content-Type',  'application/json')
+      .set('Accept',        'application/json')
+      .set('authorization', 'authToken ' + newUser.data.authToken)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .end(function(err, res) {
+        var body = res.body;
+        should.not.exist( err );
+        assert.equal( res.statusCode, 200 );
 
-    request(options, function(error, res, body) {
-      if (error) {
-        console.error('Test save log Error: ',  error.message);
+        assert.equal( body.status, 'success' );
         done();
-        return;
-      }
+      });
 
-      console.log('Test save log body: ',  body);
-      assert.equal(null, error);
-      assert.equal(200, res.statusCode);
-      assert.equal('success', body.status);
-
-      done();
-    });
   });
 
   it('Save log data', function(done){
@@ -341,29 +271,21 @@ describe('Testing User. ', function() {
       }]
     };
 
-    var options = {
-      uri: URL + '/api/v1/log',
-      method: "POST",
-      headers: { 'Content-Type': 'application/json',
-                 'Accept': 'application/json',
-                 'authorization': 'authToken '+ newUser.data.authToken },
-      json: body
-    };  
-
-    request(options, function(error, res, body) {
-      if (error) {
-        console.error('Test save log Error: ',  error.message);
+    request(app)
+      .post('/api/v1/log')
+      .set('Content-Type',  'application/json')
+      .set('Accept',        'application/json')
+      .set('authorization', 'authToken ' + newUser.data.authToken)
+      .send(body)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .end(function(err, res) {
+        var body = res.body;
+        should.not.exist( err );
+        assert.equal( body.status, 'success' );
         done();
-        return;
-      }
+      });
 
-      console.log('Test save log body: ',  body);
-      assert.equal(null, error);
-      assert.equal(200, res.statusCode);
-      assert.equal('success', body.status);
-
-      done();
-    });
   });
 
   it('Get log data by device id', function(done){
@@ -371,34 +293,25 @@ describe('Testing User. ', function() {
     var format = 'json';
     var start_date = -1;
 
-    var options = {
-      uri: URL + '/api/v1/log/' + devid,
-      method: "GET",
-      headers: { 'Content-Type': 'application/json',
-                 'Accept': 'application/json',
-                 'authorization': 'authToken '+ newUser.data.authToken },
-      json: {
+    request(app)
+      .get('/api/v1/log/' + devid)
+      .send({
         format: format,
         devid: devid,
         start_date: -1
-      }
-    };  
-
-    request(options, function(error, res, body) {
-      if (error) {
-        console.error('Test save log Error: ',  error.message);
+      })
+      .set('Content-Type',  'application/json')
+      .set('Accept',        'application/json')
+      .set('authorization', 'authToken ' + newUser.data.authToken)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .end(function(err, res) {
+        var body = res.body;
+        should.not.exist( err );
+        assert.equal( body.status, 'success' );
+        assert.equal(2, body.data.length);
         done();
-        return;
-      }
-
-      console.log('Test save log body: ',  body);
-      assert.equal(null, error);
-      assert.equal(200, res.statusCode);
-      assert.equal('success', body.status);
-      assert.equal(2, body.data.length);
-
-      done();
-    });
+      });
 
   });
 
@@ -417,90 +330,69 @@ describe('Testing User. ', function() {
     });
 
     logData.save(function(err, log) {
-      var options = {
-        uri: URL + '/api/v1/log/' + devid,
-        method: "GET",
-        headers: { 'Content-Type': 'application/json',
-                   'Accept': 'application/json',
-                   'authorization': 'authToken '+ newUser.data.authToken },
-        json: {
+      request(app)
+        .get('/api/v1/log/' + devid)
+        .send({
           format: 'json',
           devid: devid,
           phone_number: '2658261895',
           start_date: -1
-        }
-      };  
-
-      request(options, function(error, res, body) {
-        if (error) {
-          console.error('Test save log Error: ',  error.message);
+        })
+        .set('Content-Type',  'application/json')
+        .set('Accept',        'application/json')
+        .set('authorization', 'authToken ' + newUser.data.authToken)
+        .expect('Content-Type', /json/)
+        .expect(200)
+        .end(function(err, res) {
+          var body = res.body;
+          should.not.exist( err );
+          assert.equal( body.status, 'success' );
+          assert.equal(1, body.data.length);
           done();
-          return;
-        }
+        });
 
-        console.log('Test save log body: ',  body);
-        assert.equal(null, error);
-        assert.equal(200, res.statusCode);
-        assert.equal('success', body.status);
-        assert.equal(1, body.data.length);
-
-        done();
-      });
     });
   });
 
   it('Get log data by phone_number', function(done) {
     var devid = 'abcd2134';
-    var options = {
-      uri: URL + '/api/v1/log/' + devid,
-      method: "GET",
-      headers: { 'Content-Type': 'application/json',
-                 'Accept': 'application/json',
-                 'authorization': 'authToken '+ newUser.data.authToken },
-      json: {
+    request(app)
+      .get('/api/v1/log/' + devid)
+      .send({
         format: 'json',
         devid: devid,
         phone_number: '2222222222'
-      }
-    };
+      })
+      .set('Content-Type',  'application/json')
+      .set('Accept',        'application/json')
+      .set('authorization', 'authToken ' + newUser.data.authToken)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .end(function(err, res) {
+        var body = res.body;
+        should.not.exist( err );
 
-    request(options, function(error, res, body) {
-      if (error) {
-        console.error('Test save log Error: ',  error.message);
+        assert.equal( body.status, 'success' );
+        assert.equal(0, body.data.length);
         done();
-        return;
-      }
-
-      console.log('Test save log body: ',  body);
-      assert.equal(null, error);
-      assert.equal(200, res.statusCode);
-      assert.equal('success', body.status);
-      assert.equal(0, body.data.length);
-
-      done();
-    });
+      });
 
   });
 
   it('user deletion', function(done) {
-    var options = {
-      uri: URL + '/api/v1/user/' + newUser.data._id,
-      method: "DELETE",
-      headers: { 'Content-Type': 'application/json' ,
-                 'authorization': 'authToken '+ newUser.data.authToken }
-    };
+    request(app)
+      .delete('/api/v1/user/' + newUser.data._id)
+      .set('Content-Type',  'application/json')
+      .set('Accept',        'application/json')
+      .set('authorization', 'authToken ' + newUser.data.authToken)
+      .expect('Content-Type', /json/)
+      .expect(200)
+      .end(function(err, res) {
+        var body = res.body;
+        should.not.exist( err );
+        assert.equal( body.status, 'success' );
 
-    request(options, function(error, res, body) {
-      if (error) {
-        console.error('Delete user error: s',  error.message);
         done();
-        return;
-      }
-
-      assert.equal(null, error);
-      assert.equal(200, res.statusCode);
-      done();
-
-    });
+      });
   });
 });

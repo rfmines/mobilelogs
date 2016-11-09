@@ -68,12 +68,10 @@ module.exports = {
 
   update: function(id, params) {
     return new Promise(function (resolve, reject) {
-      var eventName = new EventNames(params);
 
       EventNames.findById(id, function(err, item) {
-        console.log(item);
         for (var key in params) {
-          item[key] = params[key]
+          item[key] = params[key];
         }
         item.save(function(err, item) {
           if (err) {
