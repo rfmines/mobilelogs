@@ -1,9 +1,10 @@
-var express = require('express');
-var app = module.exports = express();
-var log4js = require('log4js');
-var logger = log4js.getLogger('applog');
-var eventTypeModel = require('../db/event_type_model');
-var auth = require('../modules/auth');
+"use strict";
+const express = require('express');
+const app = module.exports = express();
+const log4js = require('log4js');
+const logger = log4js.getLogger('applog');
+const eventTypeModel = require('../db/event_type_model');
+const auth = require('../modules/auth');
 
 app.get('/', auth.checkAuth, getEventTypes);
 app.get('/:id', auth.checkAuth, getEventType);
@@ -20,9 +21,9 @@ function _E(obj) {
 }
 
 function getEventType(req, res, next) {
-  const eventId = req.params.id;
+  let eventId = req.params.id;
   try {
-    eventType = eventTypeModel.get(eventId).then(function(item){
+    let eventType = eventTypeModel.get(eventId).then(function(item){
     res.status(200).json({status: 'success', event_type: item});
   }, function(err) {
     res.status(500).json({status: 'error', message: err.message});
@@ -37,7 +38,7 @@ function getEventType(req, res, next) {
 
 function getEventTypes(req, res, next) {
   try {
-    eventType = eventTypeModel.list().then(function(items){
+    let eventType = eventTypeModel.list().then(function(items){
       res.status(200).json({status: 'success', event_types: items});
     }, function(err) {
       res.status(500).json({status: 'error', message: err.message});
@@ -51,7 +52,7 @@ function getEventTypes(req, res, next) {
 };
 
 function postEventType(req, res, next) {
-  var eventType = req.body.event_type;
+  let eventType = req.body.event_type;
   if ( _E(eventType) || _E(eventType.id) || _E(eventType.name) ) {
     res.status(406).json({status: 'error', message: 'Not Acceptable'});
     return;
@@ -70,12 +71,12 @@ function postEventType(req, res, next) {
 };
 
 function updateEventType(req, res, next) {
-  var eventType = req.body.event_type;
+  let eventType = req.body.event_type;
   if ( _E(eventType) || _E(eventType.id) && _E(eventType.name) ) {
     res.status(406).json({status: 'error', message: 'Not Acceptable'});
     return;
   }
-  var eventId = req.params.id;
+  let eventId = req.params.id;
   try {
     eventTypeModel.update(eventId, eventType).then(function (item) {
       res.status(200).json({status: 'success', event_type: item});
@@ -90,9 +91,9 @@ function updateEventType(req, res, next) {
 };
 
 function removeEventType(req, res, next) {
-  var eventId = req.params.id;
+  let eventId = req.params.id;
   try {
-    eventType = eventTypeModel.remove(eventId).then(function(item){
+    let eventType = eventTypeModel.remove(eventId).then(function(item){
       res.status(200).json({status: 'success'});
     }, function(err) {
       res.status(500).json({status: 'error', message: err.message});

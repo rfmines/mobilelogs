@@ -87,7 +87,7 @@ app.use('/api/v1/labels', apiLabels);
 app.use(errorHandlers.error);
 app.use(errorHandlers.notFound);
 
-console.log(app._router.stack)
+//console.log(app._router.stack)
 
 
 module.exports = app;
