@@ -37,8 +37,8 @@ function getEventType(req, res, next) {
 
 function getEventTypes(req, res, next) {
   try {
-    eventType = eventTypeModel.list().then(function(item){
-      res.status(200).json({status: 'success', event_type: item});
+    eventType = eventTypeModel.list().then(function(items){
+      res.status(200).json({status: 'success', event_types: items});
     }, function(err) {
       res.status(500).json({status: 'error', message: err.message});
       return;

@@ -4,7 +4,7 @@
  * Use mocha to run this script
  * Example:
  *
- * $ mocha event_names_test.js
+ * $ mocha labels_test.js
 
  */
 "use strict";
@@ -18,7 +18,7 @@ var assert = chai.assert;
 var should = chai.should();
 
 var config = require('../config');
-var eventNameModel = require('../db/event_name_model');
+var labelModel = require('../db/label_model');
 
 process.env.NODE_ENV = 'test';
 var app = require('../server');
@@ -29,15 +29,15 @@ describe('Label', function() {
   var newUser = null;
   var groupid = null;
   var userid = null;
-  var event_name = null;
+  var label = null;
 
   before(function (done) {
     var db_config = require('../db/config')["test"].database;
     mongoose.connect('mongodb://' + db_config.host + '/' + db_config.db, function () {
       mongoose.connection.db.dropDatabase(function () {
 
-        eventNameModel.create( {key: 99999, name: 'Undefined'} ).then(function (item) {
-          event_name = item;
+        labelModel.create( {key: 99999, name: 'Undefined'} ).then(function (item) {
+          label = item;
           done();
         });
       });
@@ -89,10 +89,10 @@ describe('Label', function() {
 
 
   describe('Get all', function(){
-    it('should return event_names', function (done) {
+    it('should return labels', function (done) {
 
       request(app)
-        .get('/api/v1/event_names')
+        .get('/api/v1/labels')
         .set('Content-Type',  'application/json')
         .set('Accept',        'application/json')
         .set('authorization', 'authToken ' + newUser.data.authToken)
@@ -104,7 +104,7 @@ describe('Label', function() {
           assert.equal( res.statusCode, 200 );
 
           assert.equal( body.status, 'success' );
-          assert.lengthOf( body.event_names, 1 );
+          assert.lengthOf( body.labels, 1 );
           done();
         });
 
@@ -112,10 +112,10 @@ describe('Label', function() {
   });
 
   describe('Get', function(){
-    it('should return event_name by id', function (done) {
+    it('should return label by id', function (done) {
 
       request(app)
-        .get('/api/v1/event_names/' + event_name._id)
+        .get('/api/v1/labels/' + label._id)
         .set('Content-Type',  'application/json')
         .set('Accept',        'application/json')
         .set('authorization', 'authToken ' + newUser.data.authToken)
@@ -126,7 +126,7 @@ describe('Label', function() {
           should.not.exist( err );
           assert.equal(200, res.statusCode);
           assert.equal( body.status, 'success' );
-          should.exist( body.event_name );
+          should.exist( body.label );
           done();
         });
 
@@ -134,14 +134,14 @@ describe('Label', function() {
   });
 
   describe('Post', function(){
-    it('should create event_name', function (done) {
+    it('should create label', function (done) {
 
       request(app)
-        .post('/api/v1/event_names')
+        .post('/api/v1/labels')
         .set('Content-Type',  'application/json')
         .set('Accept',        'application/json')
         .set('authorization', 'authToken ' + newUser.data.authToken)
-        .send({ event_name: {key: 0, name: 'APP_START'} })
+        .send({ label: {key: 0, name: 'APP_START'} })
         .expect('Content-Type', /json/)
         .expect(200)
         .end(function(err, res) {
@@ -156,15 +156,15 @@ describe('Label', function() {
   });
 
   describe('Update', function(){
-    it('should update event_name', function (done) {
+    it('should update label', function (done) {
       var name = 'APP_BG';
 
       request(app)
-        .put('/api/v1/event_names/' + event_name._id)
+        .put('/api/v1/labels/' + label._id)
         .set('Content-Type',  'application/json')
         .set('Accept',        'application/json')
         .set('authorization', 'authToken ' + newUser.data.authToken)
-        .send({ event_name: {name: name} })
+        .send({ label: {name: name} })
         .expect('Content-Type', /json/)
         .expect(200)
         .end(function(err, res) {
@@ -172,7 +172,7 @@ describe('Label', function() {
           should.not.exist( err );
           assert.equal( res.statusCode, 200 );
           assert.equal( body.status, 'success' );
-          assert.equal( body.event_name.name, name );
+          assert.equal( body.label.name, name );
           done();
         });
 
@@ -182,10 +182,10 @@ describe('Label', function() {
 
   describe('Remove', function(){
 
-    it('should remove event_name by id', function (done) {
+    it('should remove label by id', function (done) {
 
       request(app)
-        .delete('/api/v1/event_names/' + event_name._id)
+        .delete('/api/v1/labels/' + label._id)
         .set('Content-Type',  'application/json')
         .set('Accept',        'application/json')
         .set('authorization', 'authToken ' + newUser.data.authToken)
