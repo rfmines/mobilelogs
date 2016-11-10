@@ -13,17 +13,17 @@ var Schema = mongoose.Schema;
 var ObjectId = Schema.ObjectId;
 
 
-var labelDictionarySchema = new Schema({
+var eventValueDictionarySchema = new Schema({
   id: String,
-  name: String
+  values: [],
 });
 
-var Label = mongoose.model('Label', labelDictionarySchema);
+var EventValue = mongoose.model('EventValue', eventValueDictionarySchema);
 
 module.exports = {
   get: function(id) {
     return new Promise(function (resolve, reject) {
-      Label.findById(id, function (err, item) {
+      EventValue.findById(id, function (err, item) {
         if (err) reject( err );
 
         resolve( item );
@@ -32,7 +32,7 @@ module.exports = {
   },
   remove: function (id) {
     return new Promise(function (resolve, reject) {
-      Label.remove({_id: id}, function (err) {
+      EventValue.remove({_id: id}, function (err) {
         if (err) reject( err );
 
         resolve( 'ok' );
@@ -44,7 +44,7 @@ module.exports = {
     if (query == null) { query = {}; }
 
     return new Promise(function (resolve, reject) {
-      Label.find(query, function (err, items) {
+      EventValue.find(query, function (err, items) {
         if (err) reject( err );
 
         resolve( items );
@@ -54,7 +54,7 @@ module.exports = {
 
   create: function(params) {
     return new Promise(function (resolve, reject) {
-      var label = new Label(params);
+      var label = new EventValue(params);
       label.save(function(err, item) {
         if (err) {
           reject( err );
@@ -68,7 +68,7 @@ module.exports = {
   update: function(id, params) {
     return new Promise(function (resolve, reject) {
 
-      Label.findById(id, function(err, item) {
+      EventValue.findById(id, function(err, item) {
         for (var key in params) {
           item[key] = params[key];
         }

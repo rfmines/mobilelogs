@@ -50,7 +50,7 @@ function getEventNames(req, res, next) {
 
 function postEventName(req, res, next) {
   var eventName = req.body.event_name;
-  if ( _E(eventName) || _E(eventName.key) || _E(eventName.name) ) {
+  if ( _E(eventName) || _E(eventName.id) || _E(eventName.name) ) {
     res.status(406).json({status: 'error', message: 'Not Acceptable'});
     return;
   }
@@ -70,7 +70,7 @@ function postEventName(req, res, next) {
 
 function updateEventName(req, res, next) {
   var eventName = req.body.event_name;
-  if ( _E(eventName) || _E(eventName.key) && _E(eventName.name) ) {
+  if ( _E(eventName) || _E(eventName.id) && _E(eventName.name) ) {
     res.status(406).json({status: 'error', message: 'Not Acceptable'});
     return;
   }

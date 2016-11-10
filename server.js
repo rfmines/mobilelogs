@@ -83,6 +83,9 @@ app.use('/api/v1/event_names', apiEventNames);
 var apiLabels = require('./routes/labels');
 app.use('/api/v1/labels', apiLabels);
 
+var apiEventValues = require('./routes/event_values');
+app.use('/api/v1/event_values', apiEventValues);
+
 // Catch errors
 app.use(errorHandlers.error);
 app.use(errorHandlers.notFound);
