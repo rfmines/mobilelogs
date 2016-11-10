@@ -50,7 +50,7 @@ function getLabels(req, res, next) {
 
 function postLabel(req, res, next) {
   var label = req.body.label;
-  if ( _E(label) || _E(label.key) || _E(label.name) ) {
+  if ( _E(label) || _E(label.id) || _E(label.name) ) {
     res.status(406).json({status: 'error', message: 'Not Acceptable'});
     return;
   }
@@ -70,7 +70,7 @@ function postLabel(req, res, next) {
 
 function updateLabel(req, res, next) {
   var label = req.body.label;
-  if ( _E(label) || _E(label.key) && _E(label.name) ) {
+  if ( _E(label) || _E(label.id) && _E(label.name) ) {
     res.status(406).json({status: 'error', message: 'Not Acceptable'});
     return;
   }

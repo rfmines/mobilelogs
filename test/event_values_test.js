@@ -1,10 +1,10 @@
 /**
  * Blackbox test for app logger
- * 
+ *
  * Use mocha to run this script
  * Example:
  *
- * $ mocha event_names_test.js
+ * $ mocha event_values_test.js
 
  */
 "use strict";
@@ -18,26 +18,26 @@ var assert = chai.assert;
 var should = chai.should();
 
 var config = require('../config');
-var eventNameModel = require('../db/event_name_model');
+var eventValueModel = require('../db/event_value_model');
 
 process.env.NODE_ENV = 'test';
 var app = require('../server');
 
-
-describe('Label', function() {
+describe('Event Type', function() {
 
   var newUser = null;
   var groupid = null;
   var userid = null;
-  var event_name = null;
+  var eventValue = null;
 
   before(function (done) {
     var db_config = require('../db/config')["test"].database;
     mongoose.connect('mongodb://' + db_config.host + '/' + db_config.db, function () {
       mongoose.connection.db.dropDatabase(function () {
 
-        eventNameModel.create( {id: 99999, name: 'Undefined'} ).then(function (item) {
-          event_name = item;
+        eventValueModel.create( {id: 99999, values: [ {"0":"Not Reachable"}, {"1":"Reachable Wifi"} ]} ).then(function (item) {
+          eventValue = item;
+          console.log(item);
           done();
         });
       });
@@ -87,12 +87,10 @@ describe('Label', function() {
       });
   });
 
-
   describe('Get all', function(){
-    it('should return event_names', function (done) {
-
+    it('should return event Types', function (done) {
       request(app)
-        .get('/api/v1/event_names')
+        .get('/api/v1/event_values')
         .set('Content-Type',  'application/json')
         .set('Accept',        'application/json')
         .set('authorization', 'authToken ' + newUser.data.authToken)
@@ -104,7 +102,7 @@ describe('Label', function() {
           assert.equal( res.statusCode, 200 );
 
           assert.equal( body.status, 'success' );
-          assert.lengthOf( body.event_names, 1 );
+          assert.lengthOf( body.event_values, 1 );
           done();
         });
 
@@ -112,10 +110,9 @@ describe('Label', function() {
   });
 
   describe('Get', function(){
-    it('should return event_name by id', function (done) {
-
+    it('should return event type by id', function (done) {
       request(app)
-        .get('/api/v1/event_names/' + event_name._id)
+        .get('/api/v1/event_values/' + eventValue._id)
         .set('Content-Type',  'application/json')
         .set('Accept',        'application/json')
         .set('authorization', 'authToken ' + newUser.data.authToken)
@@ -126,7 +123,7 @@ describe('Label', function() {
           should.not.exist( err );
           assert.equal(200, res.statusCode);
           assert.equal( body.status, 'success' );
-          should.exist( body.event_name );
+          should.exist( body.event_value );
           done();
         });
 
@@ -134,14 +131,14 @@ describe('Label', function() {
   });
 
   describe('Post', function(){
-    it('should create event_name', function (done) {
+    it('should create event type', function (done) {
 
       request(app)
-        .post('/api/v1/event_names')
+        .post('/api/v1/event_values')
         .set('Content-Type',  'application/json')
         .set('Accept',        'application/json')
         .set('authorization', 'authToken ' + newUser.data.authToken)
-        .send({ event_name: {id: 0, name: 'APP_START'} })
+        .send({ event_value: {id: 0, values: [{ "-1":"Reg_Invalid" }] } })
         .expect('Content-Type', /json/)
         .expect(200)
         .end(function(err, res) {
@@ -156,15 +153,18 @@ describe('Label', function() {
   });
 
   describe('Update', function(){
-    it('should update event_name', function (done) {
-      var name = 'APP_BG';
+    it('should update event type', function (done) {
+      var values = [
+        {"0":"No"},
+        {"1":"Yes"}
+      ];
 
       request(app)
-        .put('/api/v1/event_names/' + event_name._id)
+        .put('/api/v1/event_values/' + eventValue._id)
         .set('Content-Type',  'application/json')
         .set('Accept',        'application/json')
         .set('authorization', 'authToken ' + newUser.data.authToken)
-        .send({ event_name: {name: name} })
+        .send({ event_value: {values: values} })
         .expect('Content-Type', /json/)
         .expect(200)
         .end(function(err, res) {
@@ -172,7 +172,7 @@ describe('Label', function() {
           should.not.exist( err );
           assert.equal( res.statusCode, 200 );
           assert.equal( body.status, 'success' );
-          assert.equal( body.event_name.name, name );
+          assert.deepEqual( body.event_value.values, values );
           done();
         });
 
@@ -182,10 +182,10 @@ describe('Label', function() {
 
   describe('Remove', function(){
 
-    it('should remove event_name by id', function (done) {
+    it('should remove event type by id', function (done) {
 
       request(app)
-        .delete('/api/v1/event_names/' + event_name._id)
+        .delete('/api/v1/event_values/' + eventValue._id)
         .set('Content-Type',  'application/json')
         .set('Accept',        'application/json')
         .set('authorization', 'authToken ' + newUser.data.authToken)

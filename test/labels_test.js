@@ -36,7 +36,7 @@ describe('Label', function() {
     mongoose.connect('mongodb://' + db_config.host + '/' + db_config.db, function () {
       mongoose.connection.db.dropDatabase(function () {
 
-        labelModel.create( {key: 99999, name: 'Undefined'} ).then(function (item) {
+        labelModel.create( {id: 99999, name: 'Undefined'} ).then(function (item) {
           label = item;
           done();
         });
@@ -141,7 +141,7 @@ describe('Label', function() {
         .set('Content-Type',  'application/json')
         .set('Accept',        'application/json')
         .set('authorization', 'authToken ' + newUser.data.authToken)
-        .send({ label: {key: 0, name: 'APP_START'} })
+        .send({ label: {id: 0, name: 'APP_START'} })
         .expect('Content-Type', /json/)
         .expect(200)
         .end(function(err, res) {

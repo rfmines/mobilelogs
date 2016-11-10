@@ -15,7 +15,6 @@ var ObjectId = Schema.ObjectId;
 
 var eventNameDictionarySchema = new Schema({
   id: String,
-  key: String,
   name: String
 });
 
