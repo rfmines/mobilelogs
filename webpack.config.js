@@ -1,10 +1,11 @@
 var path = require('path');
 var webpack = require('webpack');
+var nodeExternals = require('webpack-node-externals');
 
 module.exports = {
-    entry: './index.js',
+    entry: './src/index.js',
     output: {
-        path: path.resolve(__dirname, 'build'),
+        path: path.resolve(__dirname, 'dist'),
         filename: 'index.bundle.js'
     },
     module: {
@@ -21,5 +22,7 @@ module.exports = {
     stats: {
         colors: true
     },
-    devtool: 'source-map'
+    devtool: 'source-map',
+    target: 'node', // in order to ignore built-in modules like path, fs, etc. 
+    externals: [nodeExternals()] // in order to ignore all modules in node_modules folder 
 };
