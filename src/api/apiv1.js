@@ -6,6 +6,10 @@
  * @author: Yeffry Zakizon
  * @changes: Dmitry Kudryavtsev
  */
+// TODO : split this file into 2(maybe more) module , because this file is too big
+  // 1) UI api ( for users auth , creating users etc.)
+  // 2) UI get data ( query data from UI)
+  // 3) Data logging ( create CSL session , store logs/events etc)
 var express = require('express');
 var app = module.exports = express();
 var log4js = require('log4js');
@@ -70,6 +74,7 @@ app.use(function (req, res, next) {
 });
 
 /* API that called from app server */
+// TODO : create api route file and move this routes to this file
 app.get('/', index);
 
 app.post('/user', createUser);
@@ -88,10 +93,7 @@ app.post('/session', createSession);
 app.post('/log', saveLogData);
 app.post('/event', saveEvent);
 
-
 app.get('/log/:devid', checkAuth, getLogData);
-
-
 
 function index(req, res, next) {
   logger.debug('api index');
@@ -104,35 +106,35 @@ function checkAuth(req, res, next) {
   var auth = req.session.auth;
   var authToken = req.session.authToken;
   logger.debug('authToken0: ', authToken);
-
+  
   if (typeof bearerHeader !== 'undefined') {
     var bearer = bearerHeader.split(" ");
     authToken = bearer[1];
     logger.debug('auth header: ', bearerHeader);
   }
-
+  
   if (authToken) {
     try {
-
+      
       jwt.verify(authToken, '00MasecR3t', function (err, decoded) {
-
+        
         if (err) {
           res.status(403).json({status: 'error', message: 'Invalid authentication: ' + err.name});
           return;
         }
         ;
-
+        
         if (decoded.tag == undefined ||
           decoded.tag !== 'mobilelogger') {
           res.status(403).json({status: 'error', message: 'Invalid authentication'});
           return;
         }
-
+        
         req.token = authToken;
         next();
         return;
       });
-
+      
     } catch (e) {
       logger.error('checkAuth error: ', e.message);
       res.status(403).json({status: 'error', message: 'Invalid authentication'});
@@ -146,8 +148,7 @@ function checkAuth(req, res, next) {
     res.status(403).json({status: 'error', message: 'Invalid authentication'});
     return;
   }
-
-
+  
 };
 /*
  * Check if API key is found in database
@@ -155,7 +156,7 @@ function checkAuth(req, res, next) {
  * Output: cb(error, LogUser)
  */
 function isAPIKeyValid(apikey, cb) {
-
+  
   if (apikey == undefined) {
     logger.debug('isAPIKeyValid invalid apikey');
     if (cb) {
@@ -164,11 +165,10 @@ function isAPIKeyValid(apikey, cb) {
     ;
   }
   ;
-
-
+  
   try {
     var query = {apikey: apikey};
-
+    
     LogUserApp.findOne(query, function (err, logUserApp) {
       if (err) {
         if (cb) {
@@ -178,7 +178,7 @@ function isAPIKeyValid(apikey, cb) {
         return;
       }
       ;
-
+      
       if (_E(logUserApp)) {
         if (cb) {
           cb(new Error('No record found'), null);
@@ -187,22 +187,21 @@ function isAPIKeyValid(apikey, cb) {
         return;
       }
       ;
-
+      
       if (cb) {
         cb(null, logUserApp);
       }
       ;
-
+      
     });
-
-
+    
   } catch (e) {
     logger.warn('isAPIKeyValid exception occured: ', e);
     if (cb) {
       cb(new Error(e.message), null);
     }
     ;
-
+    
   }
 }
 
@@ -225,7 +224,7 @@ function authUser(req, res, next) {
     }
     res.status(200).json({status: 'success', data: logUser});
   });
-
+  
 }
 
 /**
@@ -242,7 +241,7 @@ function authUser(req, res, next) {
 function authUserInternal(req, res, cb) {
   var username = req.body.username;
   var password = req.body.password;
-
+  
   if (_E(username) || _E(password)) {
     if (cb) {
       var error = new Error('Invalid username or password');
@@ -253,12 +252,11 @@ function authUserInternal(req, res, cb) {
     return;
   }
   ;
-
-
+  
   try {
     logger.info('New login with username: ' + username);
     var query = {email: username};
-
+    
     logger.debug('authUserInternal query: ', query);
     LogUser.findOne(query, function (err, logUser) {
       if (err) {
@@ -271,7 +269,7 @@ function authUserInternal(req, res, cb) {
         return;
       }
       ;
-
+      
       if (logUser == null || logUser.length == 0) {
         logger.warn('authUserInternal return no records');
         if (cb) {
@@ -284,31 +282,30 @@ function authUserInternal(req, res, cb) {
       }
       ;
       logger.debug('authUserInternal  ', logUser);
-
+      
       var match = bcrypt.compareSync(password, logUser.password);
       if (match) {
-
+        
         /* Update login_expired field */
         LogUser.update({_id: logUser._id}, {$currentDate: {last_login: true}}, {multi: false}, function (err, logUserUpdated) {
           if (err) {
             logger.error('Error while update last_login date for username: ', logUser.username);
           }
           ;
-
+          
           var authToken = jwt.sign({
             _id: logUser._id,
             username: logUser.username,
             tag: 'mobilelogger'
           }, '00MasecR3t', {expiresInMinutes: 2 * 3600});
-
-
+          
           /* Write to request session */
           req.session.username = logUser.username;
           req.session.userid = logUser._id;
           req.session.groupid = logUser.groups[0];
           req.session.auth = 'yes';
           req.session.authToken = authToken;
-
+          
           var userData = {
             username: logUser.username,
             _id: logUser._id,
@@ -322,16 +319,16 @@ function authUserInternal(req, res, cb) {
           }
           ;
         });
-
+        
       } else {
         if (cb) {
           cb(new Error('Password not match', null))
         }
         ;
       }
-
+      
     });
-
+    
   } catch (e) {
     logger.warn('authUserInternal exception occured: ', e);
     if (cb) {
@@ -342,7 +339,6 @@ function authUserInternal(req, res, cb) {
     ;
   }
 }
-
 
 /**
  * PUT API create user
@@ -363,7 +359,7 @@ function createUser(req, res, next) {
     } else {
       res.status(201).json({status: 'success'});
     }
-
+    
   });
 }
 
@@ -384,7 +380,7 @@ function createUserInternal(req, cb) {
   var username = req.body.username;
   var password = req.body.password;
   var email = req.body.email;
-
+  
   if (_E(username) || _E(password) || _E(email)) {
     if (cb) {
       cb(new Error('Invalid params'));
@@ -392,11 +388,11 @@ function createUserInternal(req, cb) {
     return;
   }
   ;
-
+  
   /* TODO: hash password with bcrypt */
   try {
     /* Look if email has been created */
-
+    
     var find = LogUser.findOne({email: email});
     find.exec(function (err, user) {
       if (user) {
@@ -407,8 +403,7 @@ function createUserInternal(req, cb) {
         ;
         return;
       }
-
-
+      
       var rounds = 10;
       var salt = bcrypt.genSaltSync(rounds);
       var hash = bcrypt.hashSync(password, salt);
@@ -419,7 +414,7 @@ function createUserInternal(req, cb) {
         apikey: uuid.v1()
       });
       logger.debug('createUser: ', logUser);
-
+      
       logUser.save(function (err, logUser) {
         if (err) {
           logger.error('Unable to create new user' + username);
@@ -429,7 +424,7 @@ function createUserInternal(req, cb) {
           return;
         }
         ;
-
+        
         LogGroup.findOneAndUpdate({name: 'ooma'}, {
           ownerid: logUser._id,
           $push: {members: logUser._id}
@@ -441,7 +436,7 @@ function createUserInternal(req, cb) {
             }
             return;
           }
-
+          
           logger.debug('Adding group id to user');
           LogGroup.findOne({name: 'ooma'}, function (err, logGroup) {
             LogUser.findOneAndUpdate({_id: logUser._id}, {$push: {groups: logGroup._id}}, {upsert: false}, function (err, logUser) {
@@ -452,9 +447,9 @@ function createUserInternal(req, cb) {
               return;
             });
           });
-
+          
         });
-
+        
       });
     });
   } catch (e) {
@@ -463,9 +458,8 @@ function createUserInternal(req, cb) {
       cb(new Error(e.message));
     }
   }
-
+  
 }
-
 
 /** GET API  get user information
  *
@@ -475,33 +469,31 @@ function createUserInternal(req, cb) {
  */
 function getUser(req, res, next) {
   var id = req.params.id;
-
+  
   if (_E(id)) {
     res.status(403).json({status: 'error', message: 'Invalid id'});
     return;
   }
   ;
-
+  
   try {
-
+    
     var ObjectId = require('mongoose').Types.ObjectId;
     var query = {_id: new ObjectId(id)};
-
-
+    
     LogUser.findOne(query, function (err, logUser) {
       if (err) {
         res.status(500).json({status: 'error', message: err.message});
         return;
       }
       ;
-
+      
       logUser.password = '';
       logger.debug('getUser  ', logUser);
-
+      
       res.status(200).json({status: 'success', data: logUser});
     });
-
-
+    
   } catch (e) {
     logger.warn('getUser exception occured: ', e);
     res.status(500).json({status: 'error', message: e.message});
@@ -516,35 +508,32 @@ function getUser(req, res, next) {
  */
 function deleteUser(req, res, next) {
   var id = req.params.id;
-
+  
   if (_E(id)) {
     res.status(403).json({status: 'error', message: 'Invalid id'});
     return;
   }
   ;
-
+  
   try {
     var ObjectId = require('mongoose').Types.ObjectId;
     var query = {_id: new ObjectId(id)};
-
-
+    
     LogUser.remove(query, function (err, logUser) {
       if (err) {
         res.status(500).json({status: 'error', message: err.message});
         return;
       }
       ;
-
-
+      
       res.status(200).json({status: 'success', data: logUser});
     });
-
+    
   } catch (e) {
     logger.warn('deleteUser exception occured: ', e);
     res.status(500).json({status: 'error', message: e.message});
   }
 }
-
 
 /**
  * POST API Create new application logger
@@ -588,57 +577,74 @@ function createApp(req, res, next) {
  * cb(err, newApplication)
  */
 function createAppInternal(req, cb) {
-
-	var groupid = req.params.groupid;
-	var userid = req.body.userid || req.query.userid;
-
-	if (_E(userid) || _E(groupid)) {
-		logger.error('Invalid userid or groupid');
-		if (cb) { cb(new Error('Invalid userid or groupid'))};
-		return;
-	};
-
-	var appname = req.body.appname || req.query.appname;
-	var apptype = req.body.apptype || req.query.apptype;
-	var os = req.body.os || req.query.os;;
-
-	if (_E(appname) || _E(apptype) || _E(os)) {
-		logger.error('Invalid params');
-		if (cb) { cb(new Error('Invalid params'))};
-		return;
-	};
-
-	try {
-		var ObjectId = require('mongoose').Types.ObjectId;
-		var logUserApp = new LogUserApp({
-			groupid: new ObjectId(groupid),
-			userid: new ObjectId(userid),
-			name: appname,
-			type: apptype,
-			os: os,
-			apikey: uuid.v1()
-		});
-
-		logUserApp.save(function(err, userApp) {
-			if (err) {
-				logger.error('Unable to create new app %s. error: %s', appname, err.message);
-				if (cb) {cb(err);};
-				return;
-			};
-
-			logger.debug('create new app success: ', userApp);
-			if (cb) { cb(null, userApp)};
-			//res.status(201).json({status: 'success', data: { id: userApp._id, apikey: userApp.apikey}});
-		});
-	} catch (e) {
-		logger.error('createUser exception occured: ', e);
-		if (cb) {
-				var error = new Error(e.message);
-				error.code = 500;
-				cb(error, null);
-			};
-	}
-
+  
+  var groupid = req.params.groupid;
+  var userid = req.body.userid || req.query.userid;
+  
+  if (_E(userid) || _E(groupid)) {
+    logger.error('Invalid userid or groupid');
+    if (cb) {
+      cb(new Error('Invalid userid or groupid'))
+    }
+    ;
+    return;
+  }
+  ;
+  
+  var appname = req.body.appname || req.query.appname;
+  var apptype = req.body.apptype || req.query.apptype;
+  var os = req.body.os || req.query.os;
+  ;
+  
+  if (_E(appname) || _E(apptype) || _E(os)) {
+    logger.error('Invalid params');
+    if (cb) {
+      cb(new Error('Invalid params'))
+    }
+    ;
+    return;
+  }
+  ;
+  
+  try {
+    var ObjectId = require('mongoose').Types.ObjectId;
+    var logUserApp = new LogUserApp({
+      groupid: new ObjectId(groupid),
+      userid: new ObjectId(userid),
+      name: appname,
+      type: apptype,
+      os: os,
+      apikey: uuid.v1()
+    });
+    
+    logUserApp.save(function (err, userApp) {
+      if (err) {
+        logger.error('Unable to create new app %s. error: %s', appname, err.message);
+        if (cb) {
+          cb(err);
+        }
+        ;
+        return;
+      }
+      ;
+      
+      logger.debug('create new app success: ', userApp);
+      if (cb) {
+        cb(null, userApp)
+      }
+      ;
+      //res.status(201).json({status: 'success', data: { id: userApp._id, apikey: userApp.apikey}});
+    });
+  } catch (e) {
+    logger.error('createUser exception occured: ', e);
+    if (cb) {
+      var error = new Error(e.message);
+      error.code = 500;
+      cb(error, null);
+    }
+    ;
+  }
+  
 }
 
 /* requires params
@@ -647,8 +653,7 @@ function createAppInternal(req, cb) {
  */
 function getApp(req, res, next) {
   var groupid = req.params.groupid;
-
-
+  
   getAppInternal(groupid, function (err, logUserApp) {
     if (err) {
       res.status(err.code).json({status: 'error', message: err.message});
@@ -666,7 +671,7 @@ function getApp(req, res, next) {
  *
  */
 function getAppInternal(groupid, cb) {
-
+  
   if (_E(groupid)) {
     if (cb) {
       var error = new Error('Invalid groupid');
@@ -677,16 +682,16 @@ function getAppInternal(groupid, cb) {
     return;
   }
   ;
-
+  
   try {
     var ObjectId = require('mongoose').Types.ObjectId;
     var query = {groupid: new ObjectId(groupid), removed: {$ne: true}};
-
+    
     var find = LogUserApp.find(query);
     find.sort({os: 1, name: 1});
-
+    
     find.exec(function (err, logUserApp) {
-
+      
       if (err) {
         logger.error(err.message);
         if (cb) {
@@ -698,7 +703,7 @@ function getAppInternal(groupid, cb) {
         return;
       }
       ;
-
+      
       if (logUserApp == null || logUserApp.length == 0) {
         if (cb) {
           var error = new Error('No record found');
@@ -709,16 +714,16 @@ function getAppInternal(groupid, cb) {
         return;
       }
       ;
-
+      
       logger.debug('getAppInternal  ', logUserApp);
-
+      
       if (cb) {
         cb(null, logUserApp);
       }
       ;
       //res.status(200).json({status: 'success', data: logUserApp});
     });
-
+    
   } catch (e) {
     logger.warn('getAppInternal exception occured: ', e);
     if (cb) {
@@ -731,15 +736,13 @@ function getAppInternal(groupid, cb) {
   }
 }
 
-
 /* requires params
  * - userid (logUserId)
  *
  */
 function deleteApp(req, res, next) {
   var userid = req.params.userid;
-
-
+  
   deleteAppInternal(req, function (err, logUserApp) {
     if (err) {
       res.status(err.code).json({status: 'error', message: err.message});
@@ -747,15 +750,13 @@ function deleteApp(req, res, next) {
     }
     res.status(200).json({status: 'success', data: logUserApp});
   });
-
-
+  
 }
 
-
 function deleteAppInternal(req, cb) {
-
+  
   var apikey = req.params.apikey || req.body.apikey || req.query.apikey;
-
+  
   if (_E(apikey)) {
     if (cb) {
       var error = new Error('Invalid user apikey');
@@ -766,11 +767,11 @@ function deleteAppInternal(req, cb) {
     return;
   }
   ;
-
+  
   try {
     var ObjectId = require('mongoose').Types.ObjectId;
     var query = {apikey: apikey};
-
+    
     LogUserApp.update(query, {removed: true}, {multi: false}, function (err, logUserApp) {
       logger.debug('deleteAppInternal delete: ', logUserApp);
       if (cb) {
@@ -799,7 +800,7 @@ function deleteAppInternal(req, cb) {
  - devManufacturer: String, //[Apple, Samsung, HTC]
  - osVersion: String // 8.3, 5.2
  });
-
+ 
  * output:
  * - sessionkey
  */
@@ -820,18 +821,18 @@ function createSession(req, res, next) {
     return;
   }
   ;
-
+  
   try {
     var ObjectId = require('mongoose').Types.ObjectId;
     var query = {apikey: apikey, devid: devid};
-
+    
     LogUserApp.findOne(query, function (err, logUserApp) {
       if (err) {
         res.status(500).json({status: 'error', message: err.message});
         return;
       }
       ;
-
+      
       var loginSession = new LogLogSession({
         apikey: apikey,
         devid: devid,
@@ -842,7 +843,8 @@ function createSession(req, res, next) {
         os_version: os_version,
         appVersion: appVersion,
         appName: appName,
-        remote_ip: remote_ip
+        remote_ip: remote_ip,
+        access_token: access_token
       });
       var req = {loginSession: loginSession};
       if (access_token != undefined) {
@@ -854,7 +856,9 @@ function createSession(req, res, next) {
             if (appName.toLowerCase() == 'office') {
               var url_validation_req = 'https://apiv2.ooma.com/v1/preferences?access_token=' + access_token;
             }
-
+            else if (appName.toLowerCase() == 'oomahomemonitoring') {
+              var url_validation_req = 'https://api-mera.ooma.com/v1/home_monitoring/base/status?access_token=' + access_token;
+            }
             else {
               var url_validation_req = 'https://apiv2.ooma.com/v1/res/preferences/system?access_token=' + access_token;
             }
@@ -937,7 +941,7 @@ function saveSessionForValidToken(req, res, cb) {
       if (err) {
         logger.error('Save session with valid token error: ', err)
         logger.error('Session params: ', new_loginSession)
-
+        
       }
       ;
       var authToken = jwt.sign({
@@ -953,7 +957,7 @@ function saveSessionForValidToken(req, res, cb) {
   catch (e) {
     res.status(500).json({status: 'error'});
   }
-
+  
 }
 
 function saveSessionForNotValidToken(req, res, cb) {
@@ -967,7 +971,7 @@ function saveSessionForNotValidToken(req, res, cb) {
     }
     ;
     if ((!limitation && loginSession['remote_ip'] != undefined ) || limitation['doc_limit'] < nonauth_limitation) {
-
+      
       if (!limitation) {
         var new_auth_lim = new LogAuthLim({
           devid: loginSession['devid'],
@@ -981,7 +985,7 @@ function saveSessionForNotValidToken(req, res, cb) {
           ;
         })
       }
-
+      
       var new_loginSession = new LogLogSession({
         apikey: loginSession['apikey'],
         devid: loginSession['devid'],
@@ -999,7 +1003,7 @@ function saveSessionForNotValidToken(req, res, cb) {
           return;
         }
         ;
-
+        
         logger.debug('createSession  ', session);
         var authToken = jwt.sign({
           _id: session._id,
@@ -1019,7 +1023,7 @@ function saveSessionForNotValidToken(req, res, cb) {
 }
 
 function getSessionsInternal(req, cb) {
-
+  
   var apikey = req.params.apikey || req.query.apikey;
   if (_E(apikey)) {
     if (cb) {
@@ -1031,15 +1035,15 @@ function getSessionsInternal(req, cb) {
     return;
   }
   ;
-
+  
   try {
-
+    
     var ObjectId = require('mongoose').Types.ObjectId;
     var devid = req.body.devid || req.query.devid;
     var query = {apikey: apikey};
     var page = req.body.page || req.query.page;
     var limit = req.body.limit || req.query.limit;
-
+    
     if (_E(devid) == false) {
       query.devid = devid
     }
@@ -1047,17 +1051,17 @@ function getSessionsInternal(req, cb) {
     logger.debug('getSessionInternal query: ', query);
     var find = LogLogSession.find(query);
     find.sort({created_date: -1});
-
+    
     if (_E(limit)) {
       limit = 10;
     }
     if (_E(page)) {
       page = 0;
     }
-
+    
     find.limit(limit);
     find.skip(page * limit);
-
+    
     find.exec(function (err, logSessions) {
       if (err) {
         if (cb) {
@@ -1069,7 +1073,7 @@ function getSessionsInternal(req, cb) {
         return;
       }
       ;
-
+      
       if (logSessions == null || logSessions.length == 0) {
         if (cb) {
           var error = new Error('No record found');
@@ -1080,13 +1084,13 @@ function getSessionsInternal(req, cb) {
         return;
       }
       ;
-
+      
       if (cb) {
         cb(null, logSessions);
       }
       ;
     });
-
+    
   } catch (e) {
     logger.warn('logSessions exception occured: ', e);
     if (cb) {
@@ -1100,7 +1104,7 @@ function getSessionsInternal(req, cb) {
 }
 
 function getDevicesInternal(req, cb) {
-
+  
   var apikey = req.params.apikey || req.query.apikey;
   if (_E(apikey)) {
     if (cb) {
@@ -1112,17 +1116,16 @@ function getDevicesInternal(req, cb) {
     return;
   }
   ;
-
+  
   try {
     var ObjectId = require('mongoose').Types.ObjectId;
     var query = {apikey: apikey};
     var page = req.body.page || req.query.page;
     var limit = req.body.limit || req.query.limit;
-
+    
     logger.debug('getDevicesInternal query: ', query);
     var find = LogLogSession.find().distinct("devid", {apikey: apikey});
-
-
+    
     find.exec(function (err, logSessions) {
       if (err) {
         if (cb) {
@@ -1134,7 +1137,7 @@ function getDevicesInternal(req, cb) {
         return;
       }
       ;
-
+      
       if (logSessions == null || logSessions.length == 0) {
         if (cb) {
           var error = new Error('No record found');
@@ -1145,15 +1148,14 @@ function getDevicesInternal(req, cb) {
         return;
       }
       ;
-
-
+      
       var outSessions = [];
       async.each(logSessions, function (devid, callback) {
         var session;
         var find3 = LogLogSession.findOne({devid: devid}).sort({_id: 1});
         find3.exec(function (err, session) {
           if (!err) {
-
+            
             var find2 = LogLogData.find().distinct("phone_number", {devid: devid});
             find2.exec(function (err, phone_numbers) {
               if (!err) {
@@ -1167,14 +1169,13 @@ function getDevicesInternal(req, cb) {
               } else {
                 logger.error('Find phone_numbers error: ', err.message);
               }
-
+              
               callback();
             });
-
+            
           }
         });
-
-
+        
       }, function (err) {
         logger.debug('Done getting all phone_number, outSessions: ', outSessions);
         if (cb) {
@@ -1187,7 +1188,7 @@ function getDevicesInternal(req, cb) {
         ;
       });
     });
-
+    
   } catch (e) {
     logger.warn('getDevicesInternal exception occured: ', e);
     if (cb) {
@@ -1228,17 +1229,17 @@ function saveLogData(req, res, next) {
   var phone_ext = req.body.x;
   var access_token = req.body.w;
   var remote_ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-
+  
   if (_E(apikey) || _E(devid) || _E(sessionid) || _E(data)) {
     logger.info('saveLogData apikey: %s, devid: %s, sessionid: %s, data: %s', apikey, devid, sessionid, JSON.stringify(data, null, 4));
     res.status(403).json({status: 'error', message: 'Invalid params'});
     return;
   }
   ;
-
+  
   try {
     var ObjectId = require('mongoose').Types.ObjectId;
-
+    
     jwt.verify(sessionid, '00MasecR3t', function (err, decoded) {
         if (err) {
           res.status(403).json({status: 'error', message: 'Invalid session id', description: err.name});
@@ -1252,13 +1253,13 @@ function saveLogData(req, res, next) {
           res.status(403).json({status: 'error', message: 'Invalid session id'});
           return;
         }
-
+        
         for (var i = 0; i < data.length; i++) {
           if (data[i] == undefined) {
             continue;
           }
           ;
-
+          
           var logData = new LogLogData({
             sessionid: new ObjectId(decoded._id),
             apikey: apikey,
@@ -1282,7 +1283,7 @@ function saveLogData(req, res, next) {
             devManufacturer: devManufacturer,
             hw_info: hw_info,
             os_name: os_name
-
+            
           });
           logData.save(function (err, log) {
             if (err) {
@@ -1305,13 +1306,12 @@ function saveLogData(req, res, next) {
         res.status(200).json({status: 'success'});
       }
     )
-
+    
   } catch (e) {
     logger.warn('saveLogData exception occured: ', e);
     res.status(500).json({status: 'error', message: e.message});
   }
 }
-
 
 /*
  *  input body:
@@ -1347,16 +1347,16 @@ function saveEvent(req, res, next) {
   var phone_ext = req.body.x;
   var access_token = req.body.w;
   var remote_ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-
-
+  
   if (_E(apikey) || _E(devid) || _E(sessionid) || _E(data)) {
     res.status(403).json({status: 'error', message: 'Invalid params'});
     return;
   }
   ;
-
+  
   try {
     var ObjectId = require('mongoose').Types.ObjectId;
+    // TODO : add middleware for checking auth session_id
     jwt.verify(sessionid, '00MasecR3t', function (err, decoded) {
       if (err) {
         res.status(403).json({status: 'error', message: 'Invalid session id', description: err.name});
@@ -1370,7 +1370,7 @@ function saveEvent(req, res, next) {
         res.status(403).json({status: 'error', message: 'Invalid session id'});
         return;
       }
-
+      
       for (var i = 0; i < data.length; i++) {
         if (data[i] == undefined) {
           continue;
@@ -1386,28 +1386,38 @@ function saveEvent(req, res, next) {
           logger.warn('saveEvent exception occured: ', e);
           continue;
         }
+        // TODO : add middleware for handling events body in cases when some fields must be moved from event_data array to main object body
         for (var j = 0; j < event_data.length; j++) {
           try {
             var call_duration;
             var remote_number;
             var call_direction;
+            var call_duration_n;
+            var remote_number_n;
+            var call_direction_n;
+            var call_type;
+            var call_id;
+            var crash_id;
+            var crash_name;
+            var crash_reason;
+            var remote_notify_type;
             event_data_array.push({
               label: getLabelName(event_data[j].z),
               value: decodeEventValue(event_data[j].z, event_data[j].k)
             })
             // this is experemental block of code , to move out call_duration and remote phone_number from array to main body
-
+            
             if (data[i].t == 30010) { // for RT_CALL_END
-
-              if (getLabelName(event_data[j].z) == 'Remote number') {
+              
+              if (getLabelName(event_data[j].z) === decode.labelDic[19].name) { //'Remote number'
                 remote_number = event_data[j].k;
                 event_data_array.pop()
               }
-              if (getLabelName(event_data[j].z) == 'Call duration') {
+              if (getLabelName(event_data[j].z) === decode.labelDic[43].name) { //'Call duration'
                 call_duration = event_data[j].k;
                 event_data_array.pop()
               }
-              if (getLabelName(event_data[j].z) == 'Call direction') {
+              if (getLabelName(event_data[j].z) === decode.labelDic[45].name) { // 'Call direction'
                 call_direction = decodeEventValue(event_data[j].z, event_data[j].k);
                 event_data_array.pop()
               }
@@ -1417,8 +1427,71 @@ function saveEvent(req, res, next) {
               remote_number = undefined;
               call_direction = undefined;
             }
+            if (data[i].t == 6) { // for APP_RNOTIFY
+              
+              if (getLabelName(event_data[j].z) === decode.labelDic[124].name) { //'remote_notify_type'
+                remote_notify_type = event_data[j].k;
+                event_data_array.pop()
+              }
+            }
+            else {
+              remote_notify_type = undefined;
+              
+            }
+            if (Math.round(parseInt(data[i].t) / 10000) === 5) { //Call group
+              if (getLabelName(event_data[j].z) === decode.labelDic[46].name) { //'Call_id'
+                call_id = event_data[j].k;
+                event_data_array.pop()
+              }
+              if (getLabelName(event_data[j].z) === decode.labelDic[19].name) { //'Remote number'
+                remote_number_n = event_data[j].k;
+                event_data_array.pop()
+              }
+              if (getLabelName(event_data[j].z) === decode.labelDic[43].name) { //'Call duration'
+                call_duration_n = event_data[j].k;
+                event_data_array.pop()
+              }
+              if (getLabelName(event_data[j].z) === decode.labelDic[62].name) { //'Call type'
+                call_type = decodeEventValue(event_data[j].z, event_data[j].k);
+                event_data_array.pop()
+              }
+              if (getLabelName(event_data[j].z) === decode.labelDic[45].name) { // 'Call direction'
+                call_direction_n = decodeEventValue(event_data[j].z, event_data[j].k);
+                event_data_array.pop()
+              }
+            }
+            
+            /////////
+            else {
+              call_id = undefined;
+              call_type = undefined;
+              remote_number_n = undefined;
+              call_duration_n = undefined;
+              call_direction_n = undefined;
+            }
+            
+            if (data[i].t == 8) { // for crush event
+              
+              if (getLabelName(event_data[j].z) === decode.labelDic[105].name) { //'crash_id'
+                crash_id = event_data[j].k;
+                event_data_array.pop()
+              }
+              if (getLabelName(event_data[j].z) === decode.labelDic[5].name) { //'Crash name'
+                crash_name = event_data[j].k;
+                event_data_array.pop()
+              }
+              if (getLabelName(event_data[j].z) === decode.labelDic[6].name) { //'Crash reason'
+                crash_reason = decodeEventValue(event_data[j].z, event_data[j].k);
+                event_data_array.pop()
+              }
+            }
+            else {
+              crash_id = undefined;
+              crash_name = undefined;
+              crash_reason = undefined;
+            }
             // end
-
+            
           } catch (e) {
             logger.warn('saveEvent exception occured: ', e);
             continue;
@@ -1428,8 +1501,7 @@ function saveEvent(req, res, next) {
           data[i].t = 99999;
         }
         decode_event = getEventNameAndType(data[i].t)
-
-
+        
         logEvent = new LogEvent({
           sessionid: new ObjectId(decoded._id),
           devid: devid,
@@ -1442,9 +1514,15 @@ function saveEvent(req, res, next) {
           db_id: data[i].b,
           phone_number: phone_number,
           phone_ext: phone_ext,
-          remote_number: remote_number,
-          call_duration: call_duration,
-          call_direction: call_direction,
+          remote_number: remote_number || remote_number_n,
+          call_duration: call_duration || call_duration_n,
+          call_direction: call_direction || call_direction_n,
+          call_type: call_type,
+          call_id: call_id,
+          crash_id: crash_id,
+          crash_name: crash_name,
+          crash_reason: crash_reason,
+          remote_notify_type: remote_notify_type,
           // geolocation: data[i].gl,
           // motion: data[i].mo,
           remote_ip: remote_ip,
@@ -1455,8 +1533,9 @@ function saveEvent(req, res, next) {
           devManufacturer: devManufacturer,
           hw_info: hw_info,
           os_name: os_name
-
+          
         });
+        
         logEvent.save(function (err, log) {
           if (err) {
             logger.error('saveEvent exception occured: ', err)
@@ -1515,7 +1594,6 @@ function levelToString(level) {
   }
 }
 
-
 /* GET API Get Log Data
  * requires params
  * - devid
@@ -1539,22 +1617,22 @@ function getLogData(req, res, next) {
   var today_only = req.body.today_only;
   var phone_number = req.body.phone_number;
   var phone_extension = req.body.phone_extension;
-
+  
   if (_E(devid)) {
     res.status(403).json({status: 'error', message: 'Invalid devid'});
     return;
   }
   ;
-
+  
   if (_E(format)) {
     format = 'html';
   }
   ;
-
+  
   try {
     var ObjectId = require('mongoose').Types.ObjectId;
     var query = {devid: devid};
-
+    
     if (_E(phone_number) == false) {
       query.phone_number = phone_number;
     }
@@ -1565,11 +1643,11 @@ function getLogData(req, res, next) {
       var today = moment().startOf('day');
       var tomorrow = moment(today).add(1, 'days');
       logger.debug('today only = yes');
-
+      
       query.client_date = {$gte: today.toDate(), $lt: tomorrow.toDate()}
     }
     ;
-
+    
     if (_E(start_date) == false) {
       var d = parseInt(start_date, 10);
       var today = moment().startOf('day');
@@ -1578,18 +1656,17 @@ function getLogData(req, res, next) {
       }
       ;
       if (_E(end_date)) {
-
+        
         end_date = moment(today).add(1, 'days').toDate();
       }
       logger.debug('start_date = ', start_date);
       logger.debug('end_date = ', end_date);
-
+      
       query.client_date = {$gte: new Date(start_date), $lt: new Date(end_date)};
     }
-
-
+    
     //logger.debug('getLogData query: ', query);
-
+    
     var find = LogLogData.find(query);
     find.exec(function (err, logdata) {
       if (err) {
@@ -1597,18 +1674,17 @@ function getLogData(req, res, next) {
         return;
       }
       ;
-
+      
       if (format === 'json') {
         res.status(200).json({status: 'success', data: logdata});
         return;
       }
-
+      
       res.writeHead(200, {'Content-Type': 'text/html'});
-
-
+      
       for (var i = 0; i < logdata.length; i++) {
         var data = logdata[i];
-
+        
         if (data.tag == 'sip') {
           res.write('<ul style="background-color: #FFBBCC;" >');
         } else {
@@ -1618,16 +1694,16 @@ function getLogData(req, res, next) {
             res.write('<ul style="background-color: #99FFCC;" >');
           }
         }
-
+        
         res.write('<li style="font-size:14;"> <pre> [' + levelToString(data.level) + '] [Date: ' + data.client_date + '] [local_ip: ' + data.local_ip + '] [remote_ip: ' + data.remote_ip + '] [phone_number: ' + data.phone_number + '] [ext: ' + data.phone_ext + '] [tag: ' + data.tag + '] </pre> </li>');
         res.write('<pre>' + data.log + '</pre>');
-
+        
         res.write('</ul>');
       }
-
+      
       res.end();
     });
-
+    
   } catch (e) {
     logger.warn('getLog exception occured: ', e);
     res.status(500).json({status: 'error', message: e.message});
@@ -1648,14 +1724,13 @@ function getLogDataInternal(req, cb) {
   var log_text = req.body.log_text || req.query.log_text;
   var page = req.body.page || req.query.page;
   var limit = req.body.limit || req.query.limit;
-
+  
   if (_E(apikey)) {
     res.status(403).json({status: 'error', message: 'Invalid apikey'});
     return;
   }
   ;
-
-
+  
   try {
     var ObjectId = require('mongoose').Types.ObjectId;
     var query = {apikey: apikey};
@@ -1663,7 +1738,7 @@ function getLogDataInternal(req, cb) {
       query.devid = devid;
     }
     ;
-
+    
     if (_E(sessionid) == false) {
       query.sessionid = sessionid;
     }
@@ -1679,15 +1754,15 @@ function getLogDataInternal(req, cb) {
       query.client_date = {$gte: today.toDate(), $lt: tomorrow.toDate()}
     }
     ;
-
+    
     if (_E(log_text) == false) {
       query.$text = {$search: log_text};
     }
-
+    
     var s = parseInt(start_date, 10);
     var e = parseInt(end_date, 10);
     var today = moment().startOf('day');
-
+    
     if (s != undefined && s != NaN) {
       start_date = moment(today).subtract(s, 'days').toDate();
     } else {
@@ -1704,12 +1779,11 @@ function getLogDataInternal(req, cb) {
         end_date = moment(today).add(1, 'days').toDate();
       }
     }
-
+    
     if (_E(sessionid) && _E(start_date) == false) {
       query.client_date = {$gte: new Date(start_date), $lt: new Date(end_date)};
     }
-
-
+    
     if (_E(tag) == false) {
       query.tag = tag;
     }
@@ -1717,10 +1791,9 @@ function getLogDataInternal(req, cb) {
       query.level = severity;
     }
     logger.debug('getLogData query: ', query);
-
-
+    
     var find = LogLogData.find(query).sort({_id: 1, sessionid: 1, client_date: 1});
-
+    
     if (_E(limit)) {
       limit = 500;
     }
@@ -1728,7 +1801,7 @@ function getLogDataInternal(req, cb) {
       limit = Number.MAX_VALUE
     }
     ;
-
+    
     LogLogData.count(query, function (err, count) {
       if (err) {
         logger.error(err);
@@ -1739,32 +1812,31 @@ function getLogDataInternal(req, cb) {
         return;
       }
       ;
-
-
+      
       var skip = 0;
       if (page != undefined && page == "last") {
         skip = count - limit;
-
+        
         page = Math.ceil(count / limit);
       } else {
         if (_E(page) || parseInt(page, 10) < 0) {
           page = 0;
         }
-
+        
         skip = parseInt(page, 10) * limit;
         if (skip >= count) {
           skip = count - limit;
         }
         ;
       }
-
+      
       if (count <= limit) {
         skip = 0;
       }
-
+      
       find.limit(limit);
       find.skip(skip);
-
+      
       find.exec(function (err, logdata) {
         if (err) {
           if (cb) {
@@ -1781,9 +1853,9 @@ function getLogDataInternal(req, cb) {
         }
         ;
       });
-
+      
     });
-
+    
   } catch (e) {
     logger.warn('getLog exception occured: ', e);
     if (cb) {
@@ -1793,6 +1865,6 @@ function getLogDataInternal(req, cb) {
     }
     ;
   }
-
+  
 }
 

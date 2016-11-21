@@ -1,3 +1,5 @@
+// TODO : I think this configs should be moved to main config file
+// to do not create multiple configuration files
 var config = {
   test: {
     //mongodb connection settings
