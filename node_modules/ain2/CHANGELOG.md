@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## v2.0.0
+
+* Upgrade unix-dgram to 0.2.3 (josephfrazier)
+
 ## v1.5.2
 
 * Fix socket bind problem in combination with cluster.js for node verions > v0.10.x (Issue #33)

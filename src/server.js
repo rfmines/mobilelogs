@@ -6,7 +6,7 @@ var bodyParser = require('body-parser');
 var errorHandlers = require('./middleware/errorhandlers');
 var log = require('./middleware/log');
 var routes = require('./routes');
-
+var path = require('path');
 var flash = require('connect-flash');
 var session = require('express-session');
 var cookieParser = require('cookie-parser');
@@ -32,11 +32,7 @@ app.use(session({
     saveUninitialized: true,
     resave: true,
     store:new MongoStore({
-            db: 'express',
-            host: 'localhost',
-            port: 27017,  
-            username: 'express',
-            password: 'ooma123', 
+            url: 'mongodb://express:ooma123@localhost:27017/express',
             collection: 'session', 
             autoReconnect:true,
             ttl: 1 * 60 * 60, /* 1 hour session expire */
@@ -47,6 +43,7 @@ app.use(session({
 app.use(flash());
 
 app.use('/static', express.static(__dirname + '/static'));
+app.set('views', path.join(__dirname + '/views'));
 
 app.engine('html', require('ejs').renderFile);
 
