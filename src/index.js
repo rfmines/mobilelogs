@@ -54,10 +54,10 @@ var shutdown = function (s) {
         logger.error("Could not close connections in time, forcefully shutting down");
         process.exit()
     }, 33 * 1000);
-}
+};
 
 // TODO : get all this process env variables from cofing file
-console.log('starting app in %s', process.env.NODE_ENV)
+console.log('starting app in %s', process.env.NODE_ENV);
 var http_port = process.env.APPLOG_PORT || process.env.PORT || config.local.http_port || 8000;
 
 var s = server.listen(http_port, function () {

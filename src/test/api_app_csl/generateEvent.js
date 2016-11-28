@@ -21,7 +21,7 @@ function generateCslDataSet(sessionId,phoneNumber,devId) {
     };
 
     for (var eventId in decode.eventNameDict) {
-        var subEvent = generateEventData(decode.eventNameDict[eventId]);
+        var subEvent = generateEventData(eventId);
         if (subEvent !== null) {
             body2send.data.push(subEvent);
         }
@@ -32,7 +32,6 @@ function generateCslDataSet(sessionId,phoneNumber,devId) {
 
 function generateEventData(eventId) {
     var newEvent = {};
-
     newEvent.db_id = eventId;
     newEvent.tag = randomGenerator(10, 'string');
     newEvent.event_name = decode.getEventNameAndType(eventId)[1];
@@ -57,7 +56,6 @@ function generateEventData(eventId) {
                 }
 
             }
-
             return newEvent;
         }
     }

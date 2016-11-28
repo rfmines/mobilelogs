@@ -30,7 +30,8 @@ function getCslSessionId(UseValidAccessToken, sessionToken) {
                     if (err) {
                         throw err;
                     } else {
-
+                        console.log('Get access token err ' + JSON.stringify(err));
+                        console.log('Get access token callback ' + JSON.stringify(access_token));
                         var requestBody = {
                             // TODO : After implementing check of APIkey on API-side add here choosing api
                             // API can be fetched directly from the mongo collection
@@ -45,6 +46,7 @@ function getCslSessionId(UseValidAccessToken, sessionToken) {
                             devManufacturer: "MochaFakeManufacturer",
                             access_token: access_token
                         };
+                        
                         request(url)
                             .post(uri)
                             .send(encodeBody(requestBody))

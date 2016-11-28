@@ -89,7 +89,8 @@ exports.runCslDataTest = function runCslDataTest() {
             it('Comparing data from Database with generated data', function (done) {
                 for (var iterator in generatedEvents.data) {
                     // TODO : implement compare of generatedData with handled data by app , which stored in mongo
-                    console.log(normilizeEvent(generatedEvents, iterator));
+                    console.log(normilizeEvent(generatedEvents , iterator));
+                    //JSON.stringify(generatedEvents[iterator]);
                 }
                 done();
             });
@@ -102,6 +103,8 @@ function compareData(sentEvent, mongoEvent) {
     null;
 }
 
+// move all special fields , which must be moved from array to main body
+// implement the same functionality as api when it handles request with events data
 function normilizeEvent(fullEventBody, iterator) {
     var result = {};
     for (var key in fullEventBody) {
@@ -109,6 +112,6 @@ function normilizeEvent(fullEventBody, iterator) {
             result[key] = fullEventBody[key];
         }
     }
-    result.data = fullEventBody.data[iterator];
+    result.data = fullEventBody.data;
     return result;
 }

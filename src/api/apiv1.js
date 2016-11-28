@@ -297,7 +297,7 @@ function authUserInternal(req, res, cb) {
             _id: logUser._id,
             username: logUser.username,
             tag: 'mobilelogger'
-          }, '00MasecR3t', {expiresInMinutes: 2 * 3600});
+          }, '00MasecR3t', {expiresIn: 2 * 3600});
           
           /* Write to request session */
           req.session.username = logUser.username;
@@ -950,7 +950,7 @@ function saveSessionForValidToken(req, res, cb) {
         tag: 'mobilelogger',
         'token_access': 1,
         'devid': loginSession['devid']
-      }, '00MasecR3t', {expiresInMinutes: 1});
+      }, '00MasecR3t', {expiresIn: 60});
       res.status(201).json({status: 'success', data: {_id: authToken}});
     });
   }
@@ -1011,7 +1011,7 @@ function saveSessionForNotValidToken(req, res, cb) {
           tag: 'mobilelogger',
           'token_access': 0,
           'devid': loginSession['devid']
-        }, '00MasecR3t', {expiresInMinutes: 1});
+        }, '00MasecR3t', {expiresIn: 60});
         res.status(201).json({status: 'success', data: {_id: authToken}});
       })
     }

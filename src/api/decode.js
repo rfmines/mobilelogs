@@ -476,7 +476,6 @@ function getKey(value, obj) {
 };
 
 function getEventNameAndType(inc_val) {
-
     var eventType = eventTypeDict[Math.round(inc_val / 10000)];
     if (eventType === undefined) {
         eventType = inc_val;
