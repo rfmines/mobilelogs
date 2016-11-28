@@ -73,68 +73,71 @@ var userAppSchema = Schema({
 });
 
 var logSessionSchema = Schema({
-  apikey: String,
-  devid: String,
-  created_date: Date,
-  os_name: String, 	// IOS, ANDROID, WP, BLACKBERRY
-  hw_info: String, // [iPhone 5s, iPhone 5c, iPhone 6, Nexus 6, galaxy 6]
-  devManufacturer: String, //[Apple, Samsung, HTC]
-  os_version: String, // 8.3, 5.2
-  appVersion: String,
-  appName: String,
-  remote_ip: String
+    apikey: String,
+    devid: String,
+    created_date: Date,
+    os_name: String, 	// IOS, ANDROID, WP, BLACKBERRY
+    hw_info: String, // [iPhone 5s, iPhone 5c, iPhone 6, Nexus 6, galaxy 6]
+    devManufacturer: String, //[Apple, Samsung, HTC]
+    os_version: String, // 8.3, 5.2
+    appVersion: String,
+    appName: String,
+    remote_ip: String,
+    access_token: String
 });
 
 var logDataSchema = Schema({
-  sessionid: String,
-  apikey: String,
-  devid: String,
-  client_date: Date, /* Set by the client */
-  created_date: Date,
-  level: Number,
-  log: String,
-  local_ip: String, /* Set by the client */
-  remote_ip: String, /* From server perspective */
-  phone_number: String,
-  phone_ext: String,
-  geolocation: {},
-  motion: String,
-  tag: String,
-  processid: String,
-  app_version: String,
-  os_version: String,
-  app_name: String,
-  devManufacturer: String, //[Apple, Samsung, HTC],
-  hw_info: String,
-  os_name: String,
-  db_id: String
+    sessionid: String,
+    apikey: String,
+    devid: String,
+    client_date: Date, /* Set by the client */
+    created_date: Date,
+    level: Number,
+    log: String,
+    local_ip: String, /* Set by the client */
+    remote_ip: String, /* From server perspective */
+    phone_number: String,
+    phone_ext: String,
+    tag: String,
+    processid: String,
+    app_version: String,
+    os_version: String,
+    app_name: String,
+    devManufacturer: String, //[Apple, Samsung, HTC],
+    hw_info: String,
+    os_name: String,
+    db_id: String
 }, {autoIndex: false});
 
 var logEventSchema = Schema({
-  sessionid: String,
-  devid: String,
-  client_date: Date, /* Set by the client */
-  created_date: Date,
-  event_type: String,
-  event_name: String,
-  event_data: [], // {  label: String, value: String }
-  tag: String,
-  db_id: String,
-  phone_number: String,
-  phone_ext: String,
-  remote_number: String,
-  call_duration: Number,
-  call_direction: String,
-  geolocation: {},
-  motion: String,
-  local_ip: String, /* Set by the client */
-  remote_ip: String, /* From server perspective */
-  app_version: String,
-  os_version: String,
-  app_name: String,
-  devManufacturer: String, //[Apple, Samsung, HTC]
-  hw_info: String,
-  os_name: String
+    sessionid: String,
+    devid: String,
+    client_date: Date, /* Set by the client */
+    created_date: Date,
+    event_type: String,
+    event_name: String,
+    event_data: [], // {  label: String, value: String }
+    tag: String,
+    db_id: String,
+    phone_number: String,
+    phone_ext: String,
+    remote_number: String,
+    call_duration: Number,
+    call_direction: String,
+    call_type: String,
+    call_id: String,
+    crash_id: String,
+    crash_name: String,
+    crash_reason: String,
+    remote_notify_type: String,
+    local_ip: String, /* Set by the client */
+    remote_ip: String, /* From server perspective */
+    app_version: String,
+    os_version: String,
+    app_name: String,
+    devManufacturer: String, //[Apple, Samsung, HTC]
+    hw_info: String,
+    os_name: String
 }, {autoIndex: false})
 
 var Non_Auth_User_Limitation_Schema = Schema({

@@ -12,7 +12,6 @@ var db_config = config.database;
 var Schema = mongoose.Schema;
 var ObjectId = Schema.ObjectId;
 
-
 var labelDictionarySchema = new Schema({
   id: String,
   name: String
@@ -21,66 +20,68 @@ var labelDictionarySchema = new Schema({
 var Label = mongoose.model('Label', labelDictionarySchema);
 
 module.exports = {
-  get: function(id) {
+  get: function (id) {
     return new Promise(function (resolve, reject) {
       Label.findById(id, function (err, item) {
-        if (err) reject( err );
-
-        resolve( item );
+        if (err) reject(err);
+        
+        resolve(item);
       })
     });
   },
   remove: function (id) {
     return new Promise(function (resolve, reject) {
       Label.remove({_id: id}, function (err) {
-        if (err) reject( err );
-
-        resolve( 'ok' );
+        if (err) reject(err);
+        
+        resolve('ok');
       });
     });
   },
-
+  
   list: function (query) {
-    if (query == null) { query = {}; }
-
+    if (query == null) {
+      query = {};
+    }
+    
     return new Promise(function (resolve, reject) {
       Label.find(query, function (err, items) {
-        if (err) reject( err );
-
-        resolve( items );
+        if (err) reject(err);
+        
+        resolve(items);
       });
     });
   },
-
-  create: function(params) {
+  
+  create: function (params) {
     return new Promise(function (resolve, reject) {
       var label = new Label(params);
-      label.save(function(err, item) {
+      label.save(function (err, item) {
         if (err) {
-          reject( err );
+          reject(err);
           return;
         }
-        resolve( item );
+        resolve(item);
       });
     });
   },
-
-  update: function(id, params) {
+  
+  update: function (id, params) {
     return new Promise(function (resolve, reject) {
-
-      Label.findById(id, function(err, item) {
+      
+      Label.findById(id, function (err, item) {
         for (var key in params) {
           item[key] = params[key];
         }
-        item.save(function(err, item) {
+        item.save(function (err, item) {
           if (err) {
-            reject( err );
+            reject(err);
             return;
           }
-
-          resolve( item );
+          
+          resolve(item);
         });
-
+        
       });
     });
   }
