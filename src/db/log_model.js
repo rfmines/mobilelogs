@@ -1,49 +1,10 @@
 var mongoose = require('mongoose');
-var log4js = require('log4js');
-var logger = log4js.getLogger('applog');
+var logger = require('./../util/logger').getlogger('db.log_model');
+var db = require('./connection').db;
 
-var db = mongoose.connection;
-
-var env = process.env.NODE_ENV || 'production';
-var config = require('./config')[env];
-var db_config = config.database;
-
-db.on('error', function (err) {
-  logger.fatal('log_model error connecting to mongodb: ', err)
-});
-
-db.on('connected', function () {
-  logger.info('Database connected ' + 'mongodb://' + db_config.host + '/'+ db_config.db, {user: db_config.user});
-})
-
-db.on('disconnected', function () {
-  logger.info('Database disconnected');
-})
-
-mongoose.connect('mongodb://' + db_config.host + '/'+ db_config.db, {user: db_config.user, pass: db_config.password});
 
 var Schema = mongoose.Schema;
 var ObjectId = Schema.ObjectId;
-
-var logfilesSchema = Schema({
-  shortid: String,
-  filename: String,
-  created_date: Date,
-  tag: String,
-  metadata: String
-
-});
-
-/* logfiles : { logfile_id: <string>
- created_date: <date>
- }
- */
-var logfileSessionsSchema = Schema({
-  userid: ObjectId,
-  apikey: String,
-  devid: String,
-  logfiles: {type: Array, "default": []}
-});
 
 
 var userSchema = Schema({
@@ -150,7 +111,6 @@ var valid_tokens_Schema = Schema({
   access_token: String,
   devid: String,
   ins_date: Date
-
 });
 
 var eventTypeDictionarySchema = Schema({
@@ -158,29 +118,26 @@ var eventTypeDictionarySchema = Schema({
   name: String
 });
 
-var LogFile = mongoose.model('LogFile', logfilesSchema);
-var LogFileSession = mongoose.model('LogFileSession', logfileSessionsSchema);
-var LogUser = mongoose.model('User', userSchema);
-var LogUserApp = mongoose.model('UserApp', userAppSchema);
-var LogLogSession = mongoose.model('LogSession', logSessionSchema);
-var LogLogData = mongoose.model('LogData', logDataSchema);
-var LogEvent = mongoose.model('Event', logEventSchema);
-var LogGroup = mongoose.model('Group', groupSchema);
-var LogAuthLim = mongoose.model('AuthLimitation', Non_Auth_User_Limitation_Schema);
-var LogValToken = mongoose.model('ValidToken', valid_tokens_Schema)
-var EventTypeDictionary = mongoose.model('EventTypeDictionary', eventTypeDictionarySchema);
+// TODO : add links from new implementations of commented below models from new files
+var LogUser = db.model('User', userSchema);
+// var LogUserApp = db.model('UserApp', userAppSchema);
+//var LogLogSession = db.model('LogSession', logSessionSchema);
+var LogLogData = db.model('LogData', logDataSchema);
+//var LogEvent = db.model('Event', logEventSchema);
+var LogGroup = db.model('Group', groupSchema);
+//var LogAuthLim = db.model('AuthLimitation', Non_Auth_User_Limitation_Schema);
+//var LogValToken = db.model('ValidToken', valid_tokens_Schema)
+var EventTypeDictionary = db.model('EventTypeDictionary', eventTypeDictionarySchema);
 
 module.exports.log_db = db;
-module.exports.LogFile = LogFile;
-module.exports.LogFileSession = LogFileSession;
 module.exports.LogUser = LogUser;
-module.exports.LogUserApp = LogUserApp;
-module.exports.LogLogSession = LogLogSession;
+//module.exports.LogUserApp = LogUserApp;
+//module.exports.LogLogSession = LogLogSession;
 module.exports.LogLogData = LogLogData;
-module.exports.LogEvent = LogEvent;
+//module.exports.LogEvent = LogEvent;
 module.exports.LogGroup = LogGroup;
-module.exports.LogAuthLim = LogAuthLim;
-module.exports.LogValToken = LogValToken;
+//module.exports.LogAuthLim = LogAuthLim;
+//module.exports.LogValToken = LogValToken;
 
 module.exports.getEventType = function (id) {
   EventTypeDictionary.findOne({'id': id}, 'value', function (err, event) {

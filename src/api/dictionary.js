@@ -1,5 +1,5 @@
 'use strict';
-var htmlBodyValues = {
+const htmlBodyValues = {
         apikey: 'f',
         sessionid: 's',
         devid: 'h',
@@ -24,7 +24,7 @@ var htmlBodyValues = {
         event_type: null
     };
 
-var possibleDataInEvents = {
+const possibleDataInEvents = {
     // numbers in this arrays are links to labels dictionary in decode.js file
     'APP_START':[0,52],
     'APP_BG':[],
@@ -101,5 +101,22 @@ var possibleDataInEvents = {
     'CALL_MISSED':[19,0,46,52]
 };
 
+const webApiNodeAddresses = {
+  production :'apiv2.ooma.com',
+  sandbox:'api-sandbox.ooma.com',
+  cert : 'api-qa.ooma.com',
+  alpha : 'api-alpha.ooma.com',
+  mera : 'api-mera.ooma.com',
+  simon : 'api.simon.ooma.com'
+};
+
+const webApiValidationPaths = {
+  office : '/v1/preferences?access_token=',
+  homemonitoring : '/v1/home_monitoring/base/status?access_token=',
+  mobile : '/v1/res/preferences/system?access_token='
+};
+
 exports.htmlBodyValues = htmlBodyValues;
 exports.possibleDataInEvents = possibleDataInEvents;
+exports.webApiNodeAddresses = webApiNodeAddresses;
+exports.webApiValidationPaths = webApiValidationPaths;

@@ -43,7 +43,6 @@ var decodeEventValue = decode.decodeEventValue;
 
 var path = require('path');
 var oomautil = require('../util/ooma_util');
-var done = false;
 
 module.exports.authUserInternal = authUserInternal;
 module.exports.getAppInternal = getAppInternal;

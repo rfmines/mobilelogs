@@ -9,11 +9,6 @@ var log4js = require('log4js');
 var logger = log4js.getLogger('kazooproxy');
 var util = require('util');
 
-module.exports.newError = newError;
-module.exports.isEmpty = isEmpty;
-module.exports.sendErrorResponseToClient = sendErrorResponseToClient;
-module.exports.sendResponseToClient = sendResponseToClient;
-
  /** Create new error with
  */
 function newError(code, message, user_data) {
@@ -72,3 +67,8 @@ function sendResponseToClient(res, body) {
         logger.fatal('sendResponseToClient UNABLE to send response to client! Error: ', e.message);
     }
 }
+
+exports.newError = newError;
+exports.isEmpty = isEmpty;
+exports.sendErrorResponseToClient = sendErrorResponseToClient;
+exports.sendResponseToClient = sendResponseToClient;
