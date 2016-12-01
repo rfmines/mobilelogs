@@ -187,7 +187,7 @@ function saveSessionForNotValidToken(newSession, res) {
             tag: 'mobilelogger',
             token_access: 0,
             devid: newSession.devid
-          }, '00MasecR3t', {expiresIn: 3600}); // valid only 1 minute
+          }, '00MasecR3t', {expiresIn: 60}); // valid only 1 minute
           res.status(201).json({status: 'success', data: {_id: authToken}});
         }, function (err) {
           logger.error('Error occurred when trying to create new session for NOT valid token.Error :' + err);
