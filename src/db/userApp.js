@@ -1,4 +1,5 @@
 var mongoose = require('mongoose');
+var logger = require('./../util/logger').getlogger('db.userApp');
 var db = require('./connection').db;
 var ObjectId = mongoose.Schema.ObjectId;
 var userAppSchema = mongoose.Schema({
@@ -17,8 +18,11 @@ module.exports = {
   get: function (query) {
     return new Promise(function (resolve, reject) {
       userApps.find(query, function (err, item) {
+        logger.debug('Looking for userApp results :');
+        logger.debug('Error :'+err);
+        logger.debug('Data :'+item);
         if (err) reject(err);
-        if (!item) reject('Apikey not found');
+        if (item.length === 0) reject('Apikey not found');
         resolve(item);
       })
     });
@@ -49,8 +53,8 @@ module.exports = {
   
   create: function (params) {
     return new Promise(function (resolve, reject) {
-      var userApp = new userApps(params);
-      userApp.save(function (err, item) {
+      var newUserApp = new userApps(params);
+      newUserApp.save(function (err, item) {
         if (err) {
           reject(err);
           return;
@@ -63,7 +67,7 @@ module.exports = {
   update: function (id, params) {
     return new Promise(function (resolve, reject) {
       
-      userApp.findById(id, function (err, item) {
+      userApps.findById(id, function (err, item) {
         for (var key in params) {
           item[key] = params[key];
         }

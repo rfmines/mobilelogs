@@ -31,6 +31,7 @@ exports.createSession = function createSession(req, res) {
     }
     
     db.userApps.get({apikey: apiKey}).then(function (userApp) {
+      logger.debug('User app was found , trying to create new session');
       
       var newSession = {
         apikey: apiKey,
@@ -50,6 +51,7 @@ exports.createSession = function createSession(req, res) {
       
       if (accessToken !== undefined && accessToken !== null) {
         // access token exists in request body , need to check it
+        logger.debug('Access token found in request, validating it');
         db.accessTokens.get({access_token: accessToken}).then(function (accessToken) {
           if (!accessToken) {
             // Access token not found locally . Need to validate it on WebApi
@@ -79,7 +81,7 @@ exports.createSession = function createSession(req, res) {
                     saveSessionForValidToken(newSession, res);
                     // This is successful auth event
                     // Have to delete limitations for this remoteIp address , if they are exists
-                    db.authIpLimitations.remove({remote_ip: remoteIp}).then(function (removed) {
+                    db.authIpLimitations.remove(remoteIp).then(function (removed) {
                       if (removed) {
                         logger.info('Limitations for ip ' + remoteIp + ' was removed.')
                       }
@@ -104,7 +106,7 @@ exports.createSession = function createSession(req, res) {
             saveSessionForValidToken(newSession, res);
             // token is valid in request
             // trying to remove ipLimitations for  remote ip address from request
-            db.authIpLimitations.remove({remote_ip: remoteIp}).then(function (removed) {
+            db.authIpLimitations.remove(remoteIp).then(function (removed) {
               if (removed) {
                 logger.info('Limitations for ip ' + remoteIp + ' was removed.')
               }
@@ -185,7 +187,7 @@ function saveSessionForNotValidToken(newSession, res) {
             tag: 'mobilelogger',
             token_access: 0,
             devid: newSession.devid
-          }, '00MasecR3t', {expiresIn: 60}); // valid only 1 minute
+          }, '00MasecR3t', {expiresIn: 3600}); // valid only 1 minute
           res.status(201).json({status: 'success', data: {_id: authToken}});
         }, function (err) {
           logger.error('Error occurred when trying to create new session for NOT valid token.Error :' + err);
@@ -209,10 +211,16 @@ function saveSessionForNotValidToken(newSession, res) {
 exports.validateSession = function validateSession(req, res, next) {
   try {
     
-    var apiKey = req.body.f || req.headers.apiKey || req.body.apiKey;
-    var sessionId = req.body.s || req.headers.sessionId || req.body.sessionId;
-    var devId = req.body.h || req.headers.hwId || req.body.hwId;
+    var apiKey = req.body.f || req.headers.apiKey || req.headers.apikey || req.body.apiKey;
+    var sessionId = req.body.s || req.headers.sessionId || req.headers.sessionid || req.body.sessionId;
+    var devId = req.body.h || req.headers.hwId || req.headers.hwid || req.body.hwId;
     var data = req.body.d || req.body.events;
+    logger.debug('Request headers :'+JSON.stringify(req.headers));
+    logger.debug('Request body :'+JSON.stringify(req.body.events[0]));
+    logger.debug('apikey :'+apiKey);
+    logger.debug('sessionId :'+sessionId);
+    logger.debug('devid :'+devId);
+    logger.debug('data :'+data);
     if (_E(apiKey) || _E(sessionId) || _E(devId) || _E(data)) {
       res.status(403).json({status: 'Error', message: 'Invalid incoming params'});
       return;
@@ -222,7 +230,7 @@ exports.validateSession = function validateSession(req, res, next) {
           res.status(403).json({status: 'error', message: 'SessionId is not valid', description: err.name});
           return;
         }
-        if (decoded.apikey !== apiKey || decoded.devid !== devid) {
+        if (decoded.apikey !== apiKey || decoded.devid !== devId) {
           res.status(403).json({status: 'error', message: 'SessionId do not match with other params '});
           return;
         } else {
@@ -230,6 +238,7 @@ exports.validateSession = function validateSession(req, res, next) {
           // adding in request information about
           req.body.tokenAccess = decoded.token_access;
           req.body.sessionId = decoded._id;
+          req.body.devid = decoded.devId;
           next();
         }
       });

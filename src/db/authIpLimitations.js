@@ -24,8 +24,8 @@ module.exports = {
   
   create: function (params) {
     return new Promise(function (resolve, reject) {
-      var authLimits = new authLimits(params);
-      authLimits.save(function (err, item) {
+      var newAuthLimits = new authLimits(params);
+      newAuthLimits.save(function (err, item) {
         if (err) {
           reject(err);
           return;

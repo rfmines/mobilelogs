@@ -1,4 +1,5 @@
 var mongoose = require('mongoose');
+mongoose.Promise = global.Promise;
 var logger = require('./../util/logger').getlogger('db.connection');
 var db = mongoose.connection;
 var env = process.env.NODE_ENV || 'production';

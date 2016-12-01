@@ -23,8 +23,8 @@ module.exports = {
     
   create: function (params) {
     return new Promise(function (resolve, reject) {
-      var session = new session(params);
-      session.save(function (err, item) {
+      var newSession = new session(params);
+      newSession.save(function (err, item) {
         if (err) {
           reject(err);
           return;

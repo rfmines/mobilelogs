@@ -7,35 +7,68 @@ exports.saveEvents = function saveEvents(req, res) {
     let eventsArray = req.body.events;
     let tokenAccess = req.body.tokenAccess;
     let sessionId = req.body.sessionId;
+    let devId = req.body.devid;
     var remote_ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     // request is valid and all fields are set
     // to improve performance we can free the client
     // and continue handle his request
-    res.status(200).json({status:'success'});
+    res.status(200).json({status: 'success'});
     for (let event of eventsArray) {
+      if (typeof event === 'string'){
+        // currently mobile team has problems with it
+        // sometimes they are sent string instead of object
+        logger.debug('Converting string event to object');
+        event = JSON.parse(event);
+      }
+      
       var normalizedEvent = normalizeEvent(event);
       normalizedEvent.created_date = Date.now();
       normalizedEvent.remote_ip = remote_ip;
+      normalizedEvent.devid = devId;
       normalizedEvent.sessionid = sessionId;
-      db.events.create(normalizedEvent).then(function(newEvent){
-        // event saved
-        // we have to increase counter for clients without accessToken
-        if (tokenAccess !== 1){
-          
-        db.authIpLimitations.update({remote_ip:remote_ip},{}).then (function(done){
-          // limitation incremented
-        },function(err){
-          logger.error('Error occurred while trying to increment IP limitations.Error:'+err);
+      if (normalizedEvent.tag !== 'test') {
+        logger.debug(JSON.stringify(normalizedEvent));
+        db.events.create(normalizedEvent).then(function (newEvent) {
+          // event saved
+          // we have to increase counter for clients without accessToken
+          if (tokenAccess !== 1) {
+            
+            db.authIpLimitations.update({remote_ip: remote_ip}, {}).then(function (done) {
+              // limitation incremented
+            }, function (err) {
+              logger.error('Error occurred while trying to increment IP limitations.Error:' + err);
+            });
+            
+          }
+        }, function (err) {
+          // this can happen because DB handles duplicates by compound unique index
+          // mobile client sometimes resend data , because did not get any response last time
+          // (mostly because of network issues)
+          logger.warn('Error occurred while trying to save event.' + err);
+          logger.debug('Event :' + JSON.stringify(normalizedEvent));
         });
-  
-        }
-      },function(err){
-        // this can happen because DB handles duplicates by compound unique index
-        // mobile client sometimes resend data , because did not get any response last time
-        // (mostly because of network issues)
-        logger.warn('Error occurred while trying to save event.'+err);
-        logger.debug('Event :'+JSON.stringify(normalizedEvent));
-      })
+      } else {
+        // save in collections for test events
+        db.events.create_test(normalizedEvent).then(function (newEvent) {
+          // event saved
+          // we have to increase counter for clients without accessToken
+          if (tokenAccess !== 1) {
+      
+            db.authIpLimitations.update({remote_ip: remote_ip}, {}).then(function (done) {
+              // limitation incremented
+            }, function (err) {
+              logger.error('Error occurred while trying to increment IP limitations.Error:' + err);
+            });
+      
+          }
+        }, function (err) {
+          // this can happen because DB handles duplicates by compound unique index
+          // mobile client sometimes resend data , because did not get any response last time
+          // (mostly because of network issues)
+          logger.warn('Error occurred while trying to save event.' + err);
+          logger.debug('Event :' + JSON.stringify(normalizedEvent));
+        });
+      }
     }
   } catch (e) {
     logger.error('Error occurred.Error:' + e);
@@ -53,20 +86,14 @@ exports.saveEvents = function saveEvents(req, res) {
  (for apiv1 this feature implemented as IF statements inside saveEvent function )
  
  */
+
 function normalizeEvent(event) {
   let handledEvent = {};
   for (let key in event) {
-    if (event[key] !== 'event_data') {
+    if (key !== 'event_data') {
       // this is not event_data
       // just adding
-      if (event[key] !== 'client_date'){
-        
-      handledEvent[key] = event.key;
-  
-      } else {
-        // Converts unix time in string to date
-        handledEvent[key] = new Date(event.key*1000)
-      }
+      handledEvent[key] = event[key]
     } else {
       // checking that current event from one of the events , where we have to move fields
       if (event.event_name.toUpperCase() === decode.eventNameDict[30010] || // RT_CALL_END event
@@ -76,7 +103,9 @@ function normalizeEvent(event) {
       ) {
         // this event from the list , where we have to move fields
         handledEvent.event_data = [];
-        for (let eventDataElement of event.key) {
+        for (let iterator in event[key]) {
+          let eventDataElement = event[key][iterator];
+          logger.debug('Iterating over '+ JSON.stringify(eventDataElement));
           if (eventDataElement.label.toUpperCase() === decode.labelDic[5].name.toUpperCase() || // 'CrashName'
             eventDataElement.label.toUpperCase() === decode.labelDic[6].name.toUpperCase() || // 'CrashReason'
             eventDataElement.label.toUpperCase() === decode.labelDic[19].name.toUpperCase() || // 'Remote number'
@@ -97,9 +126,10 @@ function normalizeEvent(event) {
         }
       } else {
         // not from list of events to handle
-        handledEvent[key] = event.key;
+        handledEvent[key] = event[key];
       }
     }
+   
   }
   return handledEvent;
 }

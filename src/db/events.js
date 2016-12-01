@@ -30,17 +30,31 @@ var eventSchema = mongoose.Schema({
   app_name: String,
   devManufacturer: String, //[Apple, Samsung, HTC]
   hw_info: String,
-  os_name: String
+  os_name: String,
+  protocol_version : String
 }, {autoIndex: false});
 
 var event = db.model('Event', eventSchema);
+var test_event = db.model('Event_test', eventSchema);
 
 module.exports = {
   
   create: function (params) {
     return new Promise(function (resolve, reject) {
-      var event = new event(params);
-      event.save(function (err, item) {
+      var newEvent = new event(params);
+      newEvent.save(function (err, item) {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(item);
+      });
+    });
+  },
+  create_test: function (params) {
+    return new Promise(function (resolve, reject) {
+      var newEvent = new test_event(params);
+      newEvent.save(function (err, item) {
         if (err) {
           reject(err);
           return;
@@ -49,4 +63,5 @@ module.exports = {
       });
     });
   }
+  
 };

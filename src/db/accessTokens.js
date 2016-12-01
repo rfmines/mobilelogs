@@ -23,8 +23,8 @@ module.exports = {
     
   create: function (params) {
     return new Promise(function (resolve, reject) {
-      var validTokens = new validTokens(params);
-      validTokens.save(function (err, item) {
+      var newvalidTokens = new validTokens(params);
+      newvalidTokens.save(function (err, item) {
         if (err) {
           reject(err);
           return;
