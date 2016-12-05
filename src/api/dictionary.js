@@ -24,6 +24,7 @@ const htmlBodyValues = {
         event_type: null
     };
 
+    // TODO : Base on this dictionary create on app start dictionaries with all events and its measurements
 const possibleDataInEvents = {
     // numbers in this arrays are links to labels dictionary in decode.js file
     'APP_START':[0,52],

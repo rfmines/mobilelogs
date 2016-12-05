@@ -12,9 +12,12 @@
   // 3) Data logging ( create CSL session , store logs/events etc)
 var express = require('express');
 var app = module.exports = express();
-var log4js = require('log4js');
-var logger = log4js.getLogger('applog');
+var logger = require('./../util/logger').getlogger('api.apiv1');
 var config = require('../config');
+var session = require('./session');
+var events = require('./events');
+
+
 var shortid = require('shortid');
 var uuid = require('node-uuid');
 var LogModel = require('../db/log_model');
@@ -24,18 +27,9 @@ var async = require('async');
 var jwt = require('jsonwebtoken');
 var request = require('request');
 var decode = require('./decode');
-var nonauth_limitation = 1000;
+const nonauth_limitation = 1000;
 
-var log_db = LogModel.log_db;
-var LogFile = LogModel.LogFile;
-var LogFileSession = LogModel.LogFileSession;
 var LogUser = LogModel.LogUser;
-var LogUserApp = LogModel.LogUserApp;
-var LogAuthLim = LogModel.LogAuthLim;
-var LogValToken = LogModel.LogValToken;
-var LogLogSession = LogModel.LogLogSession;
-var LogLogData = LogModel.LogLogData;
-var LogEvent = LogModel.LogEvent;
 var LogGroup = LogModel.LogGroup;
 var getLabelName = decode.getLabelName;
 var getEventNameAndType = decode.getEventNameAndType;
@@ -88,11 +82,9 @@ app.post('/app/:groupid', checkAuth, createApp);
 app.get('/app/:groupid', checkAuth, getApp);
 app.delete('/app/:apikey', checkAuth, deleteApp);
 
-app.post('/session', createSession);
-app.post('/log', saveLogData);
-app.post('/event', saveEvent);
+app.post('/session', session.createSession);
+app.post('/event', session.validateSession,events.saveEvents);
 
-app.get('/log/:devid', checkAuth, getLogData);
 
 function index(req, res, next) {
   logger.debug('api index');
@@ -1199,138 +1191,8 @@ function getDevicesInternal(req, cb) {
     return;
   }
 }
-/*	POST API g to database
- * 
- *  input body:
- *  {
- apikey: String,
- sessionid: String,
- devid: String,
- data: [{
- level: int,
- log: String
- }];
- }
- *
- */
-function saveLogData(req, res, next) {
-  var apikey = req.body.f;
-  var sessionid = req.body.s;
-  var devid = req.body.h;
-  var data = req.body.d;
-  var app_version = req.body.a;
-  var os_version = req.body.o;
-  var app_name = req.body.m;
-  var devManufacturer = req.body.q;
-  var hw_info = req.body.i;
-  var os_name = req.body.j;
-  var phone_number = req.body.p;
-  var phone_ext = req.body.x;
-  var access_token = req.body.w;
-  var remote_ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-  
-  if (_E(apikey) || _E(devid) || _E(sessionid) || _E(data)) {
-    logger.info('saveLogData apikey: %s, devid: %s, sessionid: %s, data: %s', apikey, devid, sessionid, JSON.stringify(data, null, 4));
-    res.status(403).json({status: 'error', message: 'Invalid params'});
-    return;
-  }
-  ;
-  
-  try {
-    var ObjectId = require('mongoose').Types.ObjectId;
-    
-    jwt.verify(sessionid, '00MasecR3t', function (err, decoded) {
-        if (err) {
-          res.status(403).json({status: 'error', message: 'Invalid session id', description: err.name});
-          return;
-        }
-        if (decoded.apikey != apikey) {
-          res.status(403).json({status: 'error', message: 'Invalid session id'});
-          return;
-        }
-        if (decoded.devid != devid) {
-          res.status(403).json({status: 'error', message: 'Invalid session id'});
-          return;
-        }
-        
-        for (var i = 0; i < data.length; i++) {
-          if (data[i] == undefined) {
-            continue;
-          }
-          ;
-          
-          var logData = new LogLogData({
-            sessionid: new ObjectId(decoded._id),
-            apikey: apikey,
-            devid: devid,
-            created_date: Date.now(),
-            client_date: new Date(data[i].c * 1000),
-            level: data[i].v,
-            log: data[i].l,
-            processid: data[i].y,
-            tag: data[i].g,
-            db_id: data[i].b,
-            phone_number: phone_number,
-            phone_ext: phone_ext,
-            // geolocation: data[i].gl,
-            // motion: data[i].mo,
-            remote_ip: remote_ip,
-            local_ip: data[i].r,
-            app_version: app_version,
-            os_version: os_version,
-            app_name: app_name,
-            devManufacturer: devManufacturer,
-            hw_info: hw_info,
-            os_name: os_name
-            
-          });
-          logData.save(function (err, log) {
-            if (err) {
-              logger.error('saveLog exception occured: ', err, 'inc data: ', req.body);
-            }
-            ;
-            if (decoded.token_access == 0 && !err) {
-              LogAuthLim.findOneAndUpdate({remote_ip: remote_ip}, {
-                $inc: {doc_limit: 1},
-                devid: devid
-              }, function (err, res_cb) {
-                if (err) {
-                  logger.error('saveLog exception occured: ', err, 'inc data: ', req.body);
-                }
-              })
-            }
-          });
-        }
-        ;
-        res.status(200).json({status: 'success'});
-      }
-    )
-    
-  } catch (e) {
-    logger.warn('saveLogData exception occured: ', e);
-    res.status(500).json({status: 'error', message: e.message});
-  }
-}
 
-/*
- *  input body:
- *  { 
- sessionid: String,
- devid: String
- data: [{
- event_name: ,
- event_data: { 	action: String,
- label: String,
- value: String
- },
- tag: String,
- phone_number: String,
- phone_ext: String,
- local_ip: String
- }];
- }
- *
- */
+
 function saveEvent(req, res, next) {
   var apikey = req.body.f;
   var sessionid = req.body.s;
