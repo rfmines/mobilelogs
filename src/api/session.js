@@ -140,7 +140,7 @@ function saveSessionForValidToken(newSession, res) {
   
   try {
     db.session.create(newSession).then(function (sessionDocument) {
-      var authToken = jwt.sign({
+      let authToken = jwt.sign({
         _id: sessionDocument._id,
         apikey: newSession.apikey,
         tag: 'mobilelogger',
@@ -162,12 +162,12 @@ function saveSessionForValidToken(newSession, res) {
 function saveSessionForNotValidToken(newSession, res) {
   try {
     
-    var validation_query = {remote_ip: newSession.remote_ip};
+    let validation_query = {remote_ip: newSession.remote_ip};
     db.authIpLimitations.get(validation_query).then(function (limitations) {
       if ((!limitations && newSession.remote_ip !== undefined && newSession.remote_ip !== null ) || limitations[0].doc_limit < nonAuthLimitation) {
         // Limitation do not exists or number of uploaded documents less then limitation on it
         if (!limitations) {
-          var newLimitation = {
+          let newLimitation = {
             devid: newSession.devid,
             remote_ip: newSession.remote_ip,
             doc_limit: 0
@@ -181,7 +181,7 @@ function saveSessionForNotValidToken(newSession, res) {
         }
         // In parallel creating new session
         db.session.create(newSession).then(function (sessionDocument) {
-          var authToken = jwt.sign({
+          let authToken = jwt.sign({
             _id: sessionDocument._id,
             apikey: newSession.apikey,
             tag: 'mobilelogger',
@@ -238,7 +238,7 @@ exports.validateSession = function validateSession(req, res, next) {
           // adding in request information about
           req.body.tokenAccess = decoded.token_access;
           req.body.sessionId = decoded._id;
-          req.body.devid = decoded.devId;
+          req.body.devid = decoded.devid;
           next();
         }
       });
@@ -248,3 +248,85 @@ exports.validateSession = function validateSession(req, res, next) {
     res.status(500).json({status: 'Error', message: 'Internal error'})
   }
 };
+
+// TODO : rewrite follow code, it is just moved here after spitting apiv1 file
+function getSessionsInternal(req, cb) {
+
+    var apikey = req.params.apikey || req.query.apikey;
+    if (_E(apikey)) {
+        if (cb) {
+            var error = new Error('Invalid user apiKey');
+            error.code = 403;
+            cb(error, null);
+        }
+        ;
+        return;
+    }
+    ;
+
+    try {
+
+        var ObjectId = require('mongoose').Types.ObjectId;
+        var devid = req.body.devid || req.query.devid;
+        var query = {apikey: apikey};
+        var page = req.body.page || req.query.page;
+        var limit = req.body.limit || req.query.limit;
+
+        if (_E(devid) == false) {
+            query.devid = devid
+        }
+        ;
+        logger.debug('getSessionInternal query: ', query);
+        var find = LogLogSession.find(query);
+        find.sort({created_date: -1});
+
+        if (_E(limit)) {
+            limit = 10;
+        }
+        if (_E(page)) {
+            page = 0;
+        }
+
+        find.limit(limit);
+        find.skip(page * limit);
+
+        find.exec(function (err, logSessions) {
+            if (err) {
+                if (cb) {
+                    var error = new Error(err.message);
+                    error.code = 403;
+                    cb(error, null);
+                }
+                ;
+                return;
+            }
+            ;
+
+            if (logSessions == null || logSessions.length == 0) {
+                if (cb) {
+                    var error = new Error('No record found');
+                    error.code = 403;
+                    cb(error, null);
+                }
+                ;
+                return;
+            }
+            ;
+
+            if (cb) {
+                cb(null, logSessions);
+            }
+            ;
+        });
+
+    } catch (e) {
+        logger.warn('logSessions exception occured: ', e);
+        if (cb) {
+            var error = new Error(e.message);
+            error.code = 500;
+            cb(error, null);
+        }
+        ;
+        return;
+    }
+}

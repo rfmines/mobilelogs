@@ -1,5 +1,6 @@
-var log4js = require('log4js');
-var config = require('./../config');
+let log4js = require('log4js');
+let config = require('./../config');
+
 
 log4js.configure({
   appenders: config.loggerConfig.log4jsAppenders

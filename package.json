@@ -47,10 +47,14 @@
     "babel-preset-stage-0": "^6.16.0",
     "babel-watch": "^2.0.3",
     "http-server": "^0.9.0",
+    "kafkaesque": "^1.0.1",
+    "log4js-kafka-appender": "^1.2.1",
     "md5": "2.2.1",
     "nodemon": "^1.11.0",
     "should": "11.1.1",
     "webpack": "^1.13.3",
-    "webpack-node-externals": "^1.5.4"
+    "webpack-node-externals": "^1.5.4",
+    "winston": "^2.3.0",
+    "winston-kafka-transport": "^0.1.6"
   }
 }
