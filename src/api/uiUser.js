@@ -1,4 +1,12 @@
+let oomautil = require('./../util/ooma_util');
+let logger = require('./../util/logger').getlogger('api.uiUser');
+let bcrypt = require('bcrypt');
+let jwt = require('jsonwebtoken');
+let usersAndGroups = require('./../db/usersAndGroups');
 
+function _E(obj) {
+    return oomautil.isEmpty(obj);
+}
 /**
  * REST API to authenticate user
  *
@@ -10,7 +18,8 @@
  * Return http response
  */
 
-function authUser(req, res, next) {
+exports.authUser = function authUser(req, res) {
+
     authUserInternal(req, res, function (err, logUser) {
         if (err) {
             res.status(err.code).json({status: 'error', message: err.message});
@@ -19,7 +28,7 @@ function authUser(req, res, next) {
         res.status(200).json({status: 'success', data: logUser});
     });
 
-}
+};
 
 /**
  * INTERNAL API to authenticate user
@@ -32,13 +41,13 @@ function authUser(req, res, next) {
  *  cb(err, user);
  */
 
-function authUserInternal(req, res, cb) {
-    var username = req.body.username;
-    var password = req.body.password;
+exports.authUserInternal = function authUserInternal(req, res, cb) {
+    let username = req.body.username;
+    let password = req.body.password;
 
     if (_E(username) || _E(password)) {
         if (cb) {
-            var error = new Error('Invalid username or password');
+            let error = new Error('Invalid username or password');
             error.code = 403;
             cb(error, null);
         }
@@ -49,13 +58,13 @@ function authUserInternal(req, res, cb) {
 
     try {
         logger.info('New login with username: ' + username);
-        var query = {email: username};
+        let query = {email: username};
 
         logger.debug('authUserInternal query: ', query);
-        LogUser.findOne(query, function (err, logUser) {
+        usersAndGroups.findOneUser(query, function (err, logUser) {
             if (err) {
                 if (cb) {
-                    var error = new Error(err.message);
+                    let error = new Error(err.message);
                     error.code = 403;
                     cb(error, null);
                 }
@@ -67,7 +76,7 @@ function authUserInternal(req, res, cb) {
             if (logUser == null || logUser.length == 0) {
                 logger.warn('authUserInternal return no records');
                 if (cb) {
-                    var error = new Error('No record found');
+                    let error = new Error('No record found');
                     error.code = 403;
                     cb(error, null);
                 }
@@ -77,17 +86,17 @@ function authUserInternal(req, res, cb) {
             ;
             logger.debug('authUserInternal  ', logUser);
 
-            var match = bcrypt.compareSync(password, logUser.password);
+            let match = bcrypt.compareSync(password, logUser.password);
             if (match) {
 
                 /* Update login_expired field */
-                LogUser.update({_id: logUser._id}, {$currentDate: {last_login: true}}, {multi: false}, function (err, logUserUpdated) {
+                usersAndGroups.updateUser({_id: logUser._id}, {$currentDate: {last_login: true}}, function (err, logUserUpdated) {
                     if (err) {
                         logger.error('Error while update last_login date for username: ', logUser.username);
                     }
                     ;
 
-                    var authToken = jwt.sign({
+                    let authToken = jwt.sign({
                         _id: logUser._id,
                         username: logUser.username,
                         tag: 'mobilelogger'
@@ -100,12 +109,11 @@ function authUserInternal(req, res, cb) {
                     req.session.auth = 'yes';
                     req.session.authToken = authToken;
 
-                    var userData = {
+                    let userData = {
                         username: logUser.username,
                         _id: logUser._id,
                         authToken: authToken,
-                        groups: logUser.groups,
-                        authToken: authToken
+                        groups: logUser.groups
                     };
                     logger.info('User "%s" authenticated. User data: %s', req.session.username, JSON.stringify(userData, null, 4));
                     if (cb) {
@@ -132,7 +140,7 @@ function authUserInternal(req, res, cb) {
         }
         ;
     }
-}
+};
 
 /**
  * PUT API create user
@@ -146,7 +154,7 @@ function authUserInternal(req, res, cb) {
  * Return http response
  */
 
-function createUser(req, res, next) {
+exports.createUser = function createUser(req, res, next) {
     createUserInternal(req, function (err, user) {
         if (err) {
             res.status(401).json({status: 'error', mesasge: err.message});
@@ -155,7 +163,7 @@ function createUser(req, res, next) {
         }
 
     });
-}
+};
 
 /**
  * INTERNAL API create user
@@ -170,10 +178,10 @@ function createUser(req, res, next) {
  * cb(err, newuser)
  */
 
-function createUserInternal(req, cb) {
-    var username = req.body.username;
-    var password = req.body.password;
-    var email = req.body.email;
+exports.createUserInternal = function createUserInternal(req, cb) {
+    let username = req.body.username;
+    let password = req.body.password;
+    let email = req.body.email;
 
     if (_E(username) || _E(password) || _E(email)) {
         if (cb) {
@@ -182,13 +190,10 @@ function createUserInternal(req, cb) {
         return;
     }
     ;
-
-    /* TODO: hash password with bcrypt */
     try {
         /* Look if email has been created */
 
-        var find = LogUser.findOne({email: email});
-        find.exec(function (err, user) {
+        usersAndGroups.findOneUser({email: email}).then(function (user) {
             if (user) {
                 logger.error('createUserInternal email: %s is exists', email);
                 if (cb) {
@@ -197,55 +202,47 @@ function createUserInternal(req, cb) {
                 ;
                 return;
             }
-
-            var rounds = 10;
-            var salt = bcrypt.genSaltSync(rounds);
-            var hash = bcrypt.hashSync(password, salt);
-            var logUser = new LogUser({
+            let rounds = 10;
+            let salt = bcrypt.genSaltSync(rounds);
+            let hash = bcrypt.hashSync(password, salt);
+            let logUser = {
                 username: username,
                 password: hash,
                 email: email,
                 apikey: uuid.v1()
-            });
+            };
+            // logic was developed by Yeffry
+            // main propose to create new user and assign ooma group to him
             logger.debug('createUser: ', logUser);
-
-            logUser.save(function (err, logUser) {
-                if (err) {
-                    logger.error('Unable to create new user' + username);
-                    if (cb) {
-                        cb(err);
-                    }
-                    return;
-                }
-                ;
-
-                LogGroup.findOneAndUpdate({name: 'ooma'}, {
-                    ownerid: logUser._id,
-                    $push: {members: logUser._id}
-                }, {upsert: true}, function (err, logGroup) {
-                    if (err) {
-                        logger.error('Error updating group');
-                        if (cb) {
-                            cb(err);
-                        }
-                        return;
-                    }
-
-                    logger.debug('Adding group id to user');
-                    LogGroup.findOne({name: 'ooma'}, function (err, logGroup) {
-                        LogUser.findOneAndUpdate({_id: logUser._id}, {$push: {groups: logGroup._id}}, {upsert: false}, function (err, logUser) {
-                            logUser.groupid = logGroup._id;
-                            if (cb) {
-                                cb(null, logUser);
-                            }
-                            return;
-                        });
+            // creating new user
+            usersAndGroups.createUser(logUser)
+                .then(function (newUser) {
+                    logUser._id = newUser._id;
+                    // adding user to ooma group
+                    return usersAndGroups.updateGroup({name: 'ooma'}, {
+                        ownerid: newUser._id,
+                        $push: {members: newUser._id}
                     });
-
+                })
+                .catch(function (err) {
+                    throw err;
+                })
+                .then(function () {
+                    // querying ooma group to get mongo _id of it
+                    return usersAndGroups.findOneGroup({name: 'ooma'})
+                })
+                .catch(function (err) {
+                    throw err;
+                })
+                .then(function (group) {
+                    // assigning ooma group to user
+                    return usersAndGroups.updateUser({_id: logUser._id}, {$push: {groups: group._id}})
+                })
+                .catch(function (err) {
+                    throw err;
                 });
 
-            });
-        });
+        })
     } catch (e) {
         logger.error('createUser exception occured: ', e);
         if (cb) {
@@ -253,7 +250,7 @@ function createUserInternal(req, cb) {
         }
     }
 
-}
+};
 
 /** GET API  get user information
  *
@@ -261,38 +258,29 @@ function createUserInternal(req, cb) {
  * - id (LogUserId)
  *
  */
-function getUser(req, res, next) {
-    var id = req.params.id;
-
+exports.getUser = function getUser(req, res, next) {
+    let id = req.params.id;
     if (_E(id)) {
         res.status(403).json({status: 'error', message: 'Invalid id'});
         return;
     }
-    ;
-
     try {
-
-        var ObjectId = require('mongoose').Types.ObjectId;
-        var query = {_id: new ObjectId(id)};
-
-        LogUser.findOne(query, function (err, logUser) {
+        let ObjectId = require('mongoose').Types.ObjectId;
+        let query = {_id: new ObjectId(id)};
+        usersAndGroups.findOneUser(query, function (err, logUser) {
             if (err) {
                 res.status(500).json({status: 'error', message: err.message});
                 return;
             }
-            ;
-
             logUser.password = '';
             logger.debug('getUser  ', logUser);
-
             res.status(200).json({status: 'success', data: logUser});
         });
-
     } catch (e) {
         logger.warn('getUser exception occured: ', e);
         res.status(500).json({status: 'error', message: e.message});
     }
-}
+};
 
 /** DELETE API  delete user
  *
@@ -300,26 +288,20 @@ function getUser(req, res, next) {
  * - id (LogUserId)
  *
  */
-function deleteUser(req, res, next) {
-    var id = req.params.id;
-
+exports.deleteUser = function deleteUser(req, res, next) {
+    let id = req.params.id;
     if (_E(id)) {
         res.status(403).json({status: 'error', message: 'Invalid id'});
         return;
     }
-    ;
-
     try {
-        var ObjectId = require('mongoose').Types.ObjectId;
-        var query = {_id: new ObjectId(id)};
-
-        LogUser.remove(query, function (err, logUser) {
+        let ObjectId = require('mongoose').Types.ObjectId;
+        let query = {_id: new ObjectId(id)};
+        usersAndGroups.deleteUser(query, function (err, logUser) {
             if (err) {
                 res.status(500).json({status: 'error', message: err.message});
                 return;
             }
-            ;
-
             res.status(200).json({status: 'success', data: logUser});
         });
 
@@ -327,4 +309,4 @@ function deleteUser(req, res, next) {
         logger.warn('deleteUser exception occured: ', e);
         res.status(500).json({status: 'error', message: e.message});
     }
-}
+};

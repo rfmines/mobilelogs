@@ -1,11 +1,11 @@
 /*
 This is new api requested by mobile team . Bug
  */
-var express = require('express');
-var logger = require('./../util/logger').getlogger('api.apiv2');
-var app = module.exports = express();
-var session = require('./session');
-var events = require('./events');
+let express = require('express');
+let logger = require('./../util/logger').getlogger('api.apiv2');
+let app = module.exports = express();
+let session = require('./session');
+let events = require('./events');
 
 app.get('/', index);
 app.post('/session', session.createSession);

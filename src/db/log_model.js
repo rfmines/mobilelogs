@@ -1,38 +1,14 @@
-var mongoose = require('mongoose');
-var db = require('./connection').db;
+let mongoose = require('mongoose');
+let db = require('./connection').db;
 
-var Schema = mongoose.Schema;
-var ObjectId = Schema.ObjectId;
+let Schema = mongoose.Schema;
 
-var userSchema = Schema({
-  username: String,
-  password: String,
-  email: String,
-  role: String,
-  last_login: Date,
-  auth_token: String,
-  groups: {type: Array, "default": []} //array to groupid
-});
-
-var groupSchema = Schema({
-  ownerid: ObjectId, //users
-  members: {type: Array, "default": []}, //array to userid
-  name: String //group name
-});
-
-var eventTypeDictionarySchema = Schema({
+let eventTypeDictionarySchema = Schema({
   id: String,
   name: String
 });
 
-var LogUser = db.model('User', userSchema);
-var LogGroup = db.model('Group', groupSchema);
-var EventTypeDictionary = db.model('EventTypeDictionary', eventTypeDictionarySchema);
-
-module.exports.log_db = db;
-module.exports.LogUser = LogUser;
-module.exports.LogGroup = LogGroup;
-
+let EventTypeDictionary = db.model('EventTypeDictionary', eventTypeDictionarySchema);
 
 module.exports.getEventType = function (id) {
   EventTypeDictionary.findOne({'id': id}, 'value', function (err, event) {

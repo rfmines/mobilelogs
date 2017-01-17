@@ -1,8 +1,8 @@
-var mongoose = require('mongoose');
-var logger = require('./../util/logger').getlogger('db.userApp');
-var db = require('./connection').db;
-var ObjectId = mongoose.Schema.ObjectId;
-var userAppSchema = mongoose.Schema({
+let mongoose = require('mongoose');
+let logger = require('./../util/logger').getlogger('db.userApp');
+let db = require('./connection').db;
+let ObjectId = mongoose.Schema.ObjectId;
+let userAppSchema = mongoose.Schema({
   groupid: ObjectId,
   userid: ObjectId,
   name: String,
@@ -12,12 +12,12 @@ var userAppSchema = mongoose.Schema({
   removed: Boolean
 });
 
-var userApps = db.model('UserApp', userAppSchema);
+let userApps = db.model('UserApp', userAppSchema);
 
 module.exports = {
   get: function (query) {
     return new Promise(function (resolve, reject) {
-      userApps.find(query, function (err, item) {
+      userApps.find(query).sort({os: 1, name: 1}).exec(function (err, item) {
         logger.debug('Looking for userApp results :');
         logger.debug('Error :'+err);
         logger.debug('Data :'+item);
@@ -53,7 +53,7 @@ module.exports = {
   
   create: function (params) {
     return new Promise(function (resolve, reject) {
-      var newUserApp = new userApps(params);
+      let newUserApp = new userApps(params);
       newUserApp.save(function (err, item) {
         if (err) {
           reject(err);

@@ -1,22 +1,20 @@
 /**
  * @brief Mobile Application logger - server side
  *
- *
  * @copyright Ooma Inc, 2015
  * @author: Yeffry Zakizon
  * @changes: Dmitry Kudryavtsev
  */
-// TODO : split this file into 2(maybe more) module , because this file is too big
-  // 1) UI api ( for users auth , creating users etc.)
-  // 2) UI get data ( query data from UI)
-  // 3) Data logging ( create CSL session , store logs/events etc)
+
 let express = require('express');
 let app = module.exports = express();
 let logger = require('./../util/logger').getlogger('api.apiv1');
 let config = require('../config');
 let session = require('./session');
 let events = require('./events');
-const nonauth_limitation = 1000;
+let jwt = require('jsonwebtoken');
+let apps = require('./uiApps');
+let users = require('./uiUser');
 
 app.use(function (req, res, next) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -25,25 +23,22 @@ app.use(function (req, res, next) {
     next();
 });
 
-
+// main routes for apiv1
 app.get('/', index);
-
-//app.post('/user', createUser);
-//app.get('/auth', authUser);
 
 app.post('/session', session.createSession);
 app.post('/event', session.validateSession,events.saveEvents);
 
-//app.get('/user/:id', checkUiAuth, getUser);
-//app.delete('/user/:id', checkUiAuth, deleteUser);
+app.post('/user', users.createUser);
+app.get('/auth', users.authUser);
+app.get('/user/:id', checkUiAuth, users.getUser);
+app.delete('/user/:id', checkUiAuth, users.deleteUser);
 
-//app.post('/app/:groupid', checkUiAuth, createApp);
-//app.get('/app/:groupid', checkUiAuth, getApp);
-//app.delete('/app/:apikey', checkUiAuth, deleteApp);
+app.post('/app/:groupid', checkUiAuth, apps.createApp);
+app.get('/app/:groupid', checkUiAuth, apps.getApp);
+app.delete('/app/:apikey', checkUiAuth, apps.deleteApp);
 
-function _E(obj) {
-    return oomautil.isEmpty(obj);
-}
+
 
 function index(req, res, next) {
     logger.debug('api v1 index');
@@ -52,13 +47,13 @@ function index(req, res, next) {
 
 /* middleware check auth */
 function checkUiAuth(req, res, next) {
-    var bearerHeader = req.headers["authorization"];
-    var auth = req.session.auth;
-    var authToken = req.session.authToken;
+    let bearerHeader = req.headers["authorization"];
+    let auth = req.session.auth;
+    let authToken = req.session.authToken;
     logger.debug('authToken0: ', authToken);
 
     if (typeof bearerHeader !== 'undefined') {
-        var bearer = bearerHeader.split(" ");
+        let bearer = bearerHeader.split(" ");
         authToken = bearer[1];
         logger.debug('auth header: ', bearerHeader);
     }
@@ -100,29 +95,3 @@ function checkUiAuth(req, res, next) {
     }
 
 };
-
-
-
-
-
-var uuid = require('node-uuid');
-var LogModel = require('../db/log_model');
-var moment = require('moment');
-var bcrypt = require('bcrypt');
-var async = require('async');
-var jwt = require('jsonwebtoken');
-var request = require('request');
-var decode = require('./decode');
-
-
-
-var path = require('path');
-var oomautil = require('../util/ooma_util');
-
-//module.exports.authUserInternal = authUserInternal;
-//module.exports.getAppInternal = getAppInternal;
-//module.exports.getSessionsInternal = getSessionsInternal;
-//module.exports.getDevicesInternal = getDevicesInternal;
-//module.exports.getLogDataInternal = getLogDataInternal;
-//module.exports.createAppInternal = createAppInternal;
-//module.exports.createUserInternal = createUserInternal;

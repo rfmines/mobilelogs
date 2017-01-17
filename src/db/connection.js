@@ -1,10 +1,10 @@
-var mongoose = require('mongoose');
+let mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
-var logger = require('./../util/logger').getlogger('db.connection');
-var db = mongoose.connection;
-var env = process.env.NODE_ENV || 'production';
-var config = require('./config');
-var db_config = config[env].database;
+let logger = require('./../util/logger').getlogger('db.connection');
+let db = mongoose.connection;
+let env = process.env.NODE_ENV || 'production';
+let config = require('./config');
+let db_config = config[env].database;
 
 if (config.showQuery) {
   mongoose.set('debug', true);

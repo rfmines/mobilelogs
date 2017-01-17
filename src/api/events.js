@@ -2,7 +2,7 @@ let logger = require('./../util/logger').getlogger('api.events');
 let db = require('./../db');
 let decode = require('./decode');
 let moment = require('moment');
-let sendCSLEventToKafka = require('./../util/kafkaLogger').sendCSLEventToKafka;
+let sendCSLEventToKafka = require('./../util/kafkaProducer').sendCSLEventToKafka;
 
 exports.saveEvents = function saveEvents(req, res) {
     try {
@@ -33,76 +33,76 @@ exports.saveEvents = function saveEvents(req, res) {
             if (!normalizedEvent.tag || normalizedEvent.tag.toLowerCase() !== 'test') {
                 logger.debug(JSON.stringify(normalizedEvent));
                 db.events.create(normalizedEvent).then(function (newEvent) {
-                    // converting date to make kafka/elastic recognize it
-                  normalizedEvent.created_date = {"$date":moment(normalizedEvent.created_date).format("YYYY-MM-DDTHH:mm:ss.SSS")};
-                  normalizedEvent.client_date = {"$date":moment(parseInt(normalizedEvent.client_date)).format("YYYY-MM-DDTHH:mm:ss.SSS")};
+                        // converting date to make kafka/elastic recognize it
+                        normalizedEvent.created_date = {"$date": moment(normalizedEvent.created_date).format("YYYY-MM-DDTHH:mm:ss.SSS")};
+                        if (!normalizedEvent.protocol_version){
+                        normalizedEvent.client_date = {"$date": moment(normalizedEvent.client_date).format("YYYY-MM-DDTHH:mm:ss.SSS")};
+                        } else {
+                            normalizedEvent.client_date = {"$date": moment(parseInt(normalizedEvent.client_date)).format("YYYY-MM-DDTHH:mm:ss.SSS")};
+                        }
 
-                    sendCSLEventToKafka(normalizedEvent).then(function (success) {
-                        logger.debug(JSON.stringify(success));
-                    },function (err) {
-                        logger.error(err);
-                    });
+                        sendCSLEventToKafka(normalizedEvent).then(function (success) {
+                            logger.debug(JSON.stringify(success));
+                        }, function (err) {
+                            logger.error(err);
+                        });
 
+                        // event saved
+                        // we have to increase counter for clients without accessToken
+                        if (tokenAccess !== 1) {
 
-                // event saved
-                // we have to increase counter for clients without accessToken
-                if (tokenAccess !== 1) {
+                            db.authIpLimitations.update({remote_ip: remote_ip}, {
+                                $inc: {doc_limit: 1},
+                                devid: devid
+                            }).then(function (done) {
+                                // limitation incremented
+                            }, function (err) {
+                                logger.error('Error occurred while trying to increment IP limitations.Error:' + err);
+                            });
 
-                    db.authIpLimitations.update({remote_ip: remote_ip}, {
-                        $inc: {doc_limit: 1},
-                        devid: devid
-                    }).then(function (done) {
-                        // limitation incremented
-                    }, function (err) {
-                        logger.error('Error occurred while trying to increment IP limitations.Error:' + err);
-                    });
+                        }
+                    }
+                    ,
+                    function (err) {
+                        // this can happen because DB handles duplicates by compound unique index
+                        // mobile client sometimes resend data , because did not get any response last time
+                        // (mostly because of network issues)
+                        logger.warn('Error occurred while trying to save event.' + err);
+                        logger.debug('Event :' + JSON.stringify(normalizedEvent));
+                    }
+                );
+            } else {
+                // save in collections for test events
+                db.events.create_test(normalizedEvent).then(function (newEvent) {
+                    // event saved
+                    // we have to increase counter for clients without accessToken
 
-                }
+                    if (tokenAccess !== 1) {
+
+                        db.authIpLimitations.update({remote_ip: remote_ip}, {
+                            $inc: {doc_limit: 1},
+                            devid: devid
+                        }).then(function (done) {
+                            // limitation incremented
+                        }, function (err) {
+                            logger.error('Error occurred while trying to increment IP limitations.Error:' + err);
+                        });
+
+                    }
+                }, function (err) {
+                    // this can happen because DB handles duplicates by compound unique index
+                    // mobile client sometimes resend data , because did not get any response last time
+                    // (mostly because of network issues)
+                    logger.warn('Error occurred while trying to save event.' + err);
+                    logger.debug('Event :' + JSON.stringify(normalizedEvent));
+                });
             }
-        ,
-            function (err) {
-                // this can happen because DB handles duplicates by compound unique index
-                // mobile client sometimes resend data , because did not get any response last time
-                // (mostly because of network issues)
-                logger.warn('Error occurred while trying to save event.' + err);
-                logger.debug('Event :' + JSON.stringify(normalizedEvent));
-            }
-
-        );
-} else
-{
-    // save in collections for test events
-    db.events.create_test(normalizedEvent).then(function (newEvent) {
-        // event saved
-        // we have to increase counter for clients without accessToken
-
-        if (tokenAccess !== 1) {
-
-            db.authIpLimitations.update({remote_ip: remote_ip}, {
-                $inc: {doc_limit: 1},
-                devid: devid
-            }).then(function (done) {
-                // limitation incremented
-            }, function (err) {
-                logger.error('Error occurred while trying to increment IP limitations.Error:' + err);
-            });
-
         }
-    }, function (err) {
-        // this can happen because DB handles duplicates by compound unique index
-        // mobile client sometimes resend data , because did not get any response last time
-        // (mostly because of network issues)
-        logger.warn('Error occurred while trying to save event.' + err);
-        logger.debug('Event :' + JSON.stringify(normalizedEvent));
-    });
-}
-}
-} catch
-(e)
-{
-    logger.error('Error occurred.Error:' + e);
-    res.status(500).json({status: 'error', message: 'Internal server error'});
-}
+    } catch
+        (e) {
+        logger.error('Error occurred.Error:' + e);
+        res.status(500).json({status: 'error', message: 'Internal server error'});
+    }
 }
 ;
 /*
@@ -189,7 +189,7 @@ function normalizeEvent(event, req) {
         handledEvent.os_name = req.body.j;
 
         //adding fields from event object
-        handledEvent.client_date = new Date(event.c * 1000);
+        handledEvent.client_date = new Date(parseInt(event.c) * 1000);
         handledEvent.local_ip = event.r;
         handledEvent.tag = event.g;
         handledEvent.db_id = event.b;
@@ -242,7 +242,6 @@ function normalizeEvent(event, req) {
             handledEvent.event_data = [];
             for (let iterator in event.e) {
                 // iterating over event_data array of objects
-
                 // decoding event_data object to database format
                 let eventDataElement = {
                     label: decode.getLabelName(event.e[iterator].z),

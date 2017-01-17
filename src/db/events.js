@@ -1,8 +1,8 @@
-var mongoose = require('mongoose');
-var db = require('./connection').db;
+let mongoose = require('mongoose');
+let db = require('./connection').db;
 
 
-var eventSchema = mongoose.Schema({
+let eventSchema = mongoose.Schema({
   sessionid: String,
   devid: String,
   client_date: Date, /* Set by the client */
@@ -34,14 +34,14 @@ var eventSchema = mongoose.Schema({
   protocol_version : String
 }, {autoIndex: false});
 
-var event = db.model('Event', eventSchema);
-var test_event = db.model('Event_test', eventSchema);
+let event = db.model('Event', eventSchema);
+let test_event = db.model('Event_test', eventSchema);
 
 module.exports = {
   
   create: function (params) {
     return new Promise(function (resolve, reject) {
-      var newEvent = new event(params);
+      let newEvent = new event(params);
       newEvent.save(function (err, item) {
         if (err) {
           reject(err);
@@ -53,7 +53,7 @@ module.exports = {
   },
   create_test: function (params) {
     return new Promise(function (resolve, reject) {
-      var newEvent = new test_event(params);
+      let newEvent = new test_event(params);
       newEvent.save(function (err, item) {
         if (err) {
           reject(err);

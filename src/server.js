@@ -58,13 +58,9 @@ app.get('/signup', routes.signup);
 app.get('/logout', routes.logout);
 app.get('/about', routes.about);
 app.get('/console', routes.console);
-app.get('/sessions/:apikey', routes.sessions);
-app.get('/devices/:apikey', routes.devices);
-app.get('/log/:apikey', routes.log);
-
 app.get('/newapp', routes.newapp);
-app.post('/newapp', routes.newapp);
 
+app.post('/newapp', routes.newapp);
 app.post('/login', routes.login);
 app.post('/signup', routes.signup);
 
@@ -74,7 +70,7 @@ app.use('/api/v1', apiv1);
 // new format of request
 // implementation of this new format still supports old version(v1) too
 // but better structured (split into files based on logical usage)
-// TODO : need to move apiv1 methods to apiv2 new structure and test it
+
 var apiv2 = require('./api/apiv2');
 app.use('/api/v2', apiv2);
 

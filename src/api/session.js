@@ -1,26 +1,26 @@
-var request = require('request');
-var jwt = require('jsonwebtoken');
-var logger = require('./../util/logger').getlogger('api.session');
-var _E = require('./../util/ooma_util').isEmpty;
-var db = require('./../db');
-var dictionary = require('./dictionary');
+let request = require('request');
+let jwt = require('jsonwebtoken');
+let logger = require('./../util/logger').getlogger('api.session');
+let _E = require('./../util/ooma_util').isEmpty;
+let db = require('./../db');
+let dictionary = require('./dictionary');
 
 const nonAuthLimitation = 1000; // number of events(document) allowed to upload without token for IP address
 
 // Create temporary session, output key is used to validate further requests
 
 exports.createSession = function createSession(req, res) {
-  var apiKey = req.body.f || req.body.apiKey;
-  var devId = req.body.h || req.body.hwId || req.body.devId;
-  var osName = req.body.j || req.body.osName;
-  var hwInfo = req.body.i || req.body.hwInfo;
-  var devManufacturer = req.body.q || req.body.devManufacturer;
-  var osVersion = req.body.o || req.body.osVersion;
-  var appVersion = req.body.a || req.body.appVersion;
-  var appName = req.body.m || req.body.appName;
-  var accessToken = req.body.w || req.body.accessToken;
-  var node = req.body.node;
-  var remoteIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  let apiKey = req.body.f || req.body.apiKey;
+  let devId = req.body.h || req.body.hwId || req.body.devId;
+  let osName = req.body.j || req.body.osName;
+  let hwInfo = req.body.i || req.body.hwInfo;
+  let devManufacturer = req.body.q || req.body.devManufacturer;
+  let osVersion = req.body.o || req.body.osVersion;
+  let appVersion = req.body.a || req.body.appVersion;
+  let appName = req.body.m || req.body.appName;
+  let accessToken = req.body.w || req.body.accessToken;
+  let node = req.body.node;
+  let remoteIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
   
   try {
     logger.debug('Trying to create new session');
@@ -33,7 +33,7 @@ exports.createSession = function createSession(req, res) {
     db.userApps.get({apikey: apiKey}).then(function (userApp) {
       logger.debug('User app was found , trying to create new session');
       
-      var newSession = {
+      let newSession = {
         apikey: apiKey,
         apikey_type: userApp[0].type,
         devid: devId,
@@ -55,8 +55,8 @@ exports.createSession = function createSession(req, res) {
         db.accessTokens.get({access_token: accessToken}).then(function (accessToken) {
           if (!accessToken) {
             // Access token not found locally . Need to validate it on WebApi
-            var webApiAddress = dictionary.webApiNodeAddresses[node.toLowerCase()];
-            var webApiPath = dictionary.webApiValidationPaths[appName.toLowerCase()];
+            let webApiAddress = dictionary.webApiNodeAddresses[node.toLowerCase()];
+            let webApiPath = dictionary.webApiValidationPaths[appName.toLowerCase()];
             if (!webApiAddress) {
               // old format without node Name , all request must be forwarded on prod
               webApiAddress = dictionary.webApiNodeAddresses.production;
@@ -67,7 +67,7 @@ exports.createSession = function createSession(req, res) {
               // mostly all these names is for mobile app
               webApiPath = dictionary.webApiValidationPaths.mobile;
             }
-            var validationUrl = webApiAddress + webApiPath + accessToken;
+            let validationUrl = webApiAddress + webApiPath + accessToken;
             request(validationUrl, function (err, response) {
               if (err) {
                 throw err;
@@ -134,7 +134,7 @@ exports.createSession = function createSession(req, res) {
     
     res.status(500).json({status: 'error', message: e.message});
   }
-}
+};
 
 function saveSessionForValidToken(newSession, res) {
   
@@ -211,16 +211,11 @@ function saveSessionForNotValidToken(newSession, res) {
 exports.validateSession = function validateSession(req, res, next) {
   try {
     
-    var apiKey = req.body.f || req.headers.apiKey || req.headers.apikey || req.body.apiKey;
-    var sessionId = req.body.s || req.headers.sessionId || req.headers.sessionid || req.body.sessionId;
-    var devId = req.body.h || req.headers.hwId || req.headers.hwid || req.body.hwId;
-    var data = req.body.d || req.body.events;
-    logger.debug('Request headers :'+JSON.stringify(req.headers));
-    logger.debug('Request body :'+JSON.stringify(req.body.events[0]));
-    logger.debug('apikey :'+apiKey);
-    logger.debug('sessionId :'+sessionId);
-    logger.debug('devid :'+devId);
-    logger.debug('data :'+data);
+    let apiKey = req.body.f || req.headers.apiKey || req.headers.apikey || req.body.apiKey;
+    let sessionId = req.body.s || req.headers.sessionId || req.headers.sessionid || req.body.sessionId;
+    let devId = req.body.h || req.headers.hwId || req.headers.hwid || req.body.hwId;
+    let data = req.body.d || req.body.events;
+
     if (_E(apiKey) || _E(sessionId) || _E(devId) || _E(data)) {
       res.status(403).json({status: 'Error', message: 'Invalid incoming params'});
       return;
@@ -248,85 +243,3 @@ exports.validateSession = function validateSession(req, res, next) {
     res.status(500).json({status: 'Error', message: 'Internal error'})
   }
 };
-
-// TODO : rewrite follow code, it is just moved here after spitting apiv1 file
-function getSessionsInternal(req, cb) {
-
-    var apikey = req.params.apikey || req.query.apikey;
-    if (_E(apikey)) {
-        if (cb) {
-            var error = new Error('Invalid user apiKey');
-            error.code = 403;
-            cb(error, null);
-        }
-        ;
-        return;
-    }
-    ;
-
-    try {
-
-        var ObjectId = require('mongoose').Types.ObjectId;
-        var devid = req.body.devid || req.query.devid;
-        var query = {apikey: apikey};
-        var page = req.body.page || req.query.page;
-        var limit = req.body.limit || req.query.limit;
-
-        if (_E(devid) == false) {
-            query.devid = devid
-        }
-        ;
-        logger.debug('getSessionInternal query: ', query);
-        var find = LogLogSession.find(query);
-        find.sort({created_date: -1});
-
-        if (_E(limit)) {
-            limit = 10;
-        }
-        if (_E(page)) {
-            page = 0;
-        }
-
-        find.limit(limit);
-        find.skip(page * limit);
-
-        find.exec(function (err, logSessions) {
-            if (err) {
-                if (cb) {
-                    var error = new Error(err.message);
-                    error.code = 403;
-                    cb(error, null);
-                }
-                ;
-                return;
-            }
-            ;
-
-            if (logSessions == null || logSessions.length == 0) {
-                if (cb) {
-                    var error = new Error('No record found');
-                    error.code = 403;
-                    cb(error, null);
-                }
-                ;
-                return;
-            }
-            ;
-
-            if (cb) {
-                cb(null, logSessions);
-            }
-            ;
-        });
-
-    } catch (e) {
-        logger.warn('logSessions exception occured: ', e);
-        if (cb) {
-            var error = new Error(e.message);
-            error.code = 500;
-            cb(error, null);
-        }
-        ;
-        return;
-    }
-}
