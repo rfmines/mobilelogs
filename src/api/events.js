@@ -2,10 +2,11 @@ let logger = require('./../util/logger').getlogger('api.events');
 let db = require('./../db');
 let decode = require('./decode');
 let moment = require('moment');
-let sendCSLEventToKafka = require('./../util/kafkaProducer').sendCSLEventToKafka;
+let sendCSLEventToKafka = require('./../util/kafkaProducer').kafkaLogger;
 
 exports.saveEvents = function saveEvents(req, res) {
     try {
+        let eventsToKafka = [];
         let eventsArray = req.body.events || req.body.d; // new format || old format
         let tokenAccess = req.body.tokenAccess;
         let sessionId = req.body.sessionId;
@@ -33,19 +34,6 @@ exports.saveEvents = function saveEvents(req, res) {
             if (!normalizedEvent.tag || normalizedEvent.tag.toLowerCase() !== 'test') {
                 logger.debug(JSON.stringify(normalizedEvent));
                 db.events.create(normalizedEvent).then(function (newEvent) {
-                        // converting date to make kafka/elastic recognize it
-                        normalizedEvent.created_date = {"$date": moment(normalizedEvent.created_date).format("YYYY-MM-DDTHH:mm:ss.SSS")};
-                        if (!normalizedEvent.protocol_version){
-                        normalizedEvent.client_date = {"$date": moment(normalizedEvent.client_date).format("YYYY-MM-DDTHH:mm:ss.SSS")};
-                        } else {
-                            normalizedEvent.client_date = {"$date": moment(parseInt(normalizedEvent.client_date)).format("YYYY-MM-DDTHH:mm:ss.SSS")};
-                        }
-
-                        sendCSLEventToKafka(normalizedEvent).then(function (success) {
-                            logger.debug(JSON.stringify(success));
-                        }, function (err) {
-                            logger.error(err);
-                        });
 
                         // event saved
                         // we have to increase counter for clients without accessToken
@@ -71,6 +59,15 @@ exports.saveEvents = function saveEvents(req, res) {
                         logger.debug('Event :' + JSON.stringify(normalizedEvent));
                     }
                 );
+                // converting date to make kafka/elastic recognize it
+                normalizedEvent.created_date = {"$date": moment(normalizedEvent.created_date).format("YYYY-MM-DDTHH:mm:ss.SSS")};
+                if (!normalizedEvent.protocol_version){
+                    normalizedEvent.client_date = {"$date": moment(normalizedEvent.client_date).format("YYYY-MM-DDTHH:mm:ss.SSS")};
+                } else {
+                    normalizedEvent.client_date = {"$date": moment(parseInt(normalizedEvent.client_date)).format("YYYY-MM-DDTHH:mm:ss.SSS")};
+                }
+
+                eventsToKafka.push(JSON.stringify(normalizedEvent));
             } else {
                 // save in collections for test events
                 db.events.create_test(normalizedEvent).then(function (newEvent) {
@@ -97,6 +94,21 @@ exports.saveEvents = function saveEvents(req, res) {
                     logger.debug('Event :' + JSON.stringify(normalizedEvent));
                 });
             }
+        }
+        // to reduce io operations we send all events to kafka/elasitc
+        // after converting ALL events from request
+        // in ONE request to kafka
+        //  this part of code will be called when loop will be finished
+        if (eventsToKafka.length !== 0){
+            logger.debug('Sending '+eventsToKafka.length+' events to kafka');
+        sendCSLEventToKafka(eventsToKafka).then(function (success) {
+            logger.debug(JSON.stringify(success));
+        }, function (err) {
+            logger.error(err);
+        });
+
+        } else {
+            logger.debug('Nothing to send, array empty');
         }
     } catch
         (e) {
