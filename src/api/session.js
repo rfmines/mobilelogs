@@ -123,11 +123,14 @@ exports.createSession = function createSession(req, res) {
         });
       } else {
         // token was not found in the request body
+          logger.debug('Access Token not found in request');
         saveSessionForNotValidToken(newSession, res);
       }
     }, function (err) {
       logger.debug('ApiKey validation failed. ApiKey : ' + apiKey);
       res.status(403).json({status: 'error', message: err});
+    }).catch(function (err) {
+      throw err;
     });
   } catch (e) {
     logger.warn('createSession exception occured: ', e);
@@ -164,7 +167,12 @@ function saveSessionForNotValidToken(newSession, res) {
     
     let validation_query = {remote_ip: newSession.remote_ip};
     db.authIpLimitations.get(validation_query).then(function (limitations) {
-      if ((!limitations && newSession.remote_ip !== undefined && newSession.remote_ip !== null ) || limitations[0].doc_limit < nonAuthLimitation) {
+      logger.debug('Checking remote ip in database for limitations');
+      logger.debug('Query result '+JSON.stringify(limitations));
+      logger.debug('New session obj '+JSON.stringify(newSession));
+
+
+      if ((!limitations[0] && newSession.remote_ip !== undefined && newSession.remote_ip !== null ) || (limitations[0].doc_limit < nonAuthLimitation)) {
         // Limitation do not exists or number of uploaded documents less then limitation on it
         if (!limitations) {
           let newLimitation = {
