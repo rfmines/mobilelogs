@@ -28,6 +28,7 @@ let eventSchema = mongoose.Schema({
   app_version: String,
   os_version: String,
   app_name: String,
+    node:String,
   devManufacturer: String, //[Apple, Samsung, HTC]
   hw_info: String,
   os_name: String,

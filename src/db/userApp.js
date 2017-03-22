@@ -18,11 +18,9 @@ module.exports = {
   get: function (query) {
     return new Promise(function (resolve, reject) {
       userApps.find(query).sort({os: 1, name: 1}).exec(function (err, item) {
-        logger.debug('Looking for userApp results :');
-        logger.debug('Error :'+err);
-        logger.debug('Data :'+item);
+
         if (err) reject(err);
-        if (item.length === 0) reject('Apikey not found');
+        if (item && item.length === 0) reject('Apikey not found');
         resolve(item);
       })
     });

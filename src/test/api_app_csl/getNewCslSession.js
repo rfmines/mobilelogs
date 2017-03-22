@@ -1,19 +1,20 @@
 'use strict';
 
 'use strict';
-var should = require('should');
-var assert = require('chai').assert;
-var request = require('supertest');
-var mongoose = require('mongoose');
-var moment = require('moment');
-var jwt = require('jsonwebtoken');
+let should = require('should');
+let assert = require('chai').assert;
+let request = require('supertest');
+let mongoose = require('mongoose');
+let moment = require('moment');
+let jwt = require('jsonwebtoken');
 
-var getAccessToken = require('./../supportMethods').getAccessToken;
-var encodeBody = require('./../supportMethods').encodeBody;
+let getAccessToken = require('./../supportMethods').getAccessToken;
+let encodeBody = require('./../supportMethods').encodeBody;
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-var url = "https://localhost";
-var uri = "/api/v1/session";
+let url = "https://localhost";
+let uri_v1 = "/api/v1/session";
+let uri_v2 = "/api/v2/session";
 /*
  Generates CSL session ID
  Parameters :
@@ -21,7 +22,14 @@ var uri = "/api/v1/session";
  true - uses token from webApi
  false - uses incorrect token (for testing authentication Limitation with counters)
  */
-function getCslSessionId(UseValidAccessToken, sessionToken) {
+function getCslSessionId(UseValidAccessToken,csl_version, sessionToken) {
+    let uriToUse;
+    let body2send;
+    if (csl_version ===2){
+        uriToUse=uri_v2;
+        } else {
+        uriToUse=uri_v1
+    }
     try {
         if (typeof (UseValidAccessToken) === 'boolean') {
             if (UseValidAccessToken) {
@@ -32,24 +40,29 @@ function getCslSessionId(UseValidAccessToken, sessionToken) {
                     } else {
                         console.log('Get access token err ' + JSON.stringify(err));
                         console.log('Get access token callback ' + JSON.stringify(access_token));
-                        var requestBody = {
-                            // TODO : After implementing check of APIkey on API-side add here choosing api
-                            // API can be fetched directly from the mongo collection
-                            apikey: "MochaTestkey",
+                        let requestBody = {
+
+                            apikey: "a8eb8550-0888-11e5-80a5-293501daf124",
+                            apiKey:"a8eb8550-0888-11e5-80a5-293501daf124", // for csl2.0
                             devid: "MochaTestFakeDeviceId",
-                            os_version: "9.9.9",
+                            devId: "MochaTestFakeDeviceId", // for csl2.0
                             os_name: "MochaFramework",
                             hw_info: "MochaTestFakeDeviceName",
-                            app_version: "9.9(99999)",
-                            // TODO : add multiple apps support - office and HMS with token_generation and then validation here
-                            app_name: "mobile",
                             devManufacturer: "MochaFakeManufacturer",
-                            access_token: access_token
-                        };
-                        
+                            os_version: "9.9.9",
+                            app_version: "9.9(99999)",
+                            app_name: "mobile",
+                            access_token: access_token,
+                            node:'Production'
+                            };
+                        if(csl_version ===2){
+                            body2send=requestBody
+                        } else {
+                            body2send=encodeBody(requestBody);
+                        }
                         request(url)
-                            .post(uri)
-                            .send(encodeBody(requestBody))
+                            .post(uriToUse)
+                            .send(body2send)
                             .end(function (err, res) {
                                 if (err) {
                                     console.log('err occurred '+ err);
@@ -67,20 +80,28 @@ function getCslSessionId(UseValidAccessToken, sessionToken) {
                     }
                 });
             } else {
-                var requestBody = {
-                    apikey: "MochaTestkey",
+                let requestBody = {
+
+                    apikey: "a8eb8550-0888-11e5-80a5-293501daf124",
+                    apiKey:"a8eb8550-0888-11e5-80a5-293501daf124", // for csl2.0
                     devid: "MochaTestFakeDeviceId",
-                    os_version: "9.9.9",
+                    devId: "MochaTestFakeDeviceId", // for csl2.0
                     os_name: "MochaFramework",
                     hw_info: "MochaTestFakeDeviceName",
+                    devManufacturer: "MochaFakeManufacturer",
+                    os_version: "9.9.9",
                     app_version: "9.9(99999)",
                     app_name: "mobile",
-                    devManufacturer: "MochaFakeManufacturer",
-                    access_token: "1233456"
+                    node:'Production'
                 };
+                if(csl_version ===2){
+                    body2send=requestBody
+                } else {
+                    body2send=encodeBody(requestBody);
+                }
                 request(url)
-                    .post(uri)
-                    .send(encodeBody(requestBody))
+                    .post(uriToUse)
+                    .send(body2send)
                     .end(function (err, res) {
                         if (err) {
                             throw err;
@@ -97,7 +118,7 @@ function getCslSessionId(UseValidAccessToken, sessionToken) {
                     });
             }
         } else {
-            var err = new Error('parameter must be boolean');
+            let err = new Error('parameter must be boolean');
             throw err;
         }
     }

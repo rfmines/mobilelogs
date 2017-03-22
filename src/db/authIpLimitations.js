@@ -1,13 +1,13 @@
-var mongoose = require('mongoose');
-var db = require('./connection').db;
-var Schema = mongoose.Schema;
-var Non_Auth_User_Limitation_Schema = Schema({
+let mongoose = require('mongoose');
+let db = require('./connection').db;
+let Schema = mongoose.Schema;
+let Non_Auth_User_Limitation_Schema = Schema({
   devid: String,
   remote_ip: String,
   doc_limit: Number
 },{timestamps:true, autoIndex:false});
 
-var authLimits = db.model('AuthLimitation', Non_Auth_User_Limitation_Schema);
+let authLimits = db.model('AuthLimitation', Non_Auth_User_Limitation_Schema);
 
 module.exports = {
   get: function (query) {

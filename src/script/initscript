@@ -20,7 +20,7 @@ PORTS="8001 8002 8003 8004"
 
 
 command="pm2"
-nodeApp="/root/applog-dev/index.js"
+nodeApp="/root/mobilelogs/src/index.js"
 appID="mobilelogs"
 
 start() {
@@ -40,7 +40,7 @@ start() {
    # does not work unless we set the PATH.
 	
    
-   PORT=$PORT $command -n $appID start $nodeApp -f --watch
+   PORT=$PORT $command -n $appID start $nodeApp -f --watch /root/mobilelogs/src  --node-args="--max-old-space-size=3072"
    if [ $? -ne 0 ]; then
       echo "Running $nodeApp on port $PORT failed"
    fi 

@@ -10,7 +10,10 @@ producer.on('ready', function () {
 function sendEventToKafka(data) {
     return new Promise(function (resolve, reject) {
         let payload = [
-            {topic:'mobile-logs',
+            {
+                //topic:'mobile-logs',
+                topic:'mobile-logs-new',
+
             messages:data}
         ];
         producer.send(payload, function (err, response) {
@@ -25,8 +28,6 @@ function sendEventToKafka(data) {
                 })
             }
             else {
-                logger.debug('Kafka response ' + JSON.stringify(response));
-                logger.debug('Event sent!' + JSON.stringify(data));
                 resolve(data);
 
             }

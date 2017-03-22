@@ -1,6 +1,7 @@
 
-var config = {
+let config = {
     app_name: "CSL",
+    storeInMongo:true,
     database: {
         connectionString: process.env.CSL_DB_URL,
         reconnectTries: 3600,

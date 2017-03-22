@@ -1,12 +1,12 @@
-var mongoose = require('mongoose');
-var db = require('./connection').db;
+let mongoose = require('mongoose');
+let db = require('./connection').db;
 
-var validTokensSchema = mongoose.Schema({
+let validTokensSchema = mongoose.Schema({
   access_token: String ,
   devid: String
 }, {timestamps:true, autoIndex:false});
 
-var validTokens = db.model('ValidToken', validTokensSchema);
+let validTokens = db.model('ValidToken', validTokensSchema);
 
 module.exports = {
   get: function (query) {

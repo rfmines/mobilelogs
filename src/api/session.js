@@ -10,20 +10,20 @@ const nonAuthLimitation = 1000; // number of events(document) allowed to upload 
 // Create temporary session, output key is used to validate further requests
 
 exports.createSession = function createSession(req, res) {
-  let apiKey = req.body.f || req.body.apiKey;
-  let devId = req.body.h || req.body.hwId || req.body.devId;
-  let osName = req.body.j || req.body.osName;
-  let hwInfo = req.body.i || req.body.hwInfo;
-  let devManufacturer = req.body.q || req.body.devManufacturer;
-  let osVersion = req.body.o || req.body.osVersion;
-  let appVersion = req.body.a || req.body.appVersion;
-  let appName = req.body.m || req.body.appName;
-  let accessToken = req.body.w || req.body.accessToken;
+  let apiKey = req.body.f || req.body.apiKey || req.body.api_key;
+  let devId = req.body.h || req.body.hwId || req.body.devId || req.body.dev_id;
+  let osName = req.body.j || req.body.osName || req.body.os_name;
+  let hwInfo = req.body.i || req.body.hwInfo || req.body.hw_info;
+  let devManufacturer = req.body.q || req.body.devManufacturer|| req.body.dev_manufacturer;
+  let osVersion = req.body.o || req.body.osVersion || req.body.os_version;
+  let appVersion = req.body.a || req.body.appVersion || req.body.app_version;
+  let appName = req.body.m || req.body.appName || req.body.app_name;
+  let accessToken = req.body.w || req.body.accessToken || req.body.access_token;
   let node = req.body.node;
   let remoteIp = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
   
   try {
-    logger.debug('Trying to create new session');
+
     if (_E(apiKey) || _E(devId)) {
       logger.debug('createSession failed apikey: %s, devid: %s', apiKey, devId);
       res.status(403).json({status: 'error', message: 'Invalid params in incoming request'});
@@ -31,7 +31,7 @@ exports.createSession = function createSession(req, res) {
     }
     
     db.userApps.get({apikey: apiKey}).then(function (userApp) {
-      logger.debug('User app was found , trying to create new session');
+
       
       let newSession = {
         apikey: apiKey,
@@ -51,9 +51,10 @@ exports.createSession = function createSession(req, res) {
       
       if (accessToken !== undefined && accessToken !== null) {
         // access token exists in request body , need to check it
-        logger.debug('Access token found in request, validating it');
+        logger.debug('Tryin to validate token %s for node %s',accessToken,node);
         db.accessTokens.get({access_token: accessToken}).then(function (accessToken) {
           if (!accessToken) {
+            logger.debug('Token %s not found in local db, validating it on webapi',newSession.access_token);
             // Access token not found locally . Need to validate it on WebApi
             let webApiAddress = dictionary.webApiNodeAddresses[node.toLowerCase()];
             let webApiPath = dictionary.webApiValidationPaths[appName.toLowerCase()];
@@ -73,6 +74,7 @@ exports.createSession = function createSession(req, res) {
                 throw err;
               } else {
                 if (response.statusCode === 200) {
+                  logger.debug('Webapi approved token %s ',accessToken);
                   // Token is valid , it must be saved locally
                   db.accessTokens.create({
                     devid: devId, access_token: accessToken
@@ -93,8 +95,8 @@ exports.createSession = function createSession(req, res) {
                   })
                 } else {
                   // access token exists is request , but didn't pass validation on WebApi
-                  logger.warn('Validation on webApi failed.Validation url ' + validationUrl);
-                  logger.debug('Session object ' + JSON.stringify(newSession));
+                  logger.warn('Token validation %s on webApi failed.Validation url %s' ,newSession.access_token, validationUrl);
+
                   saveSessionForNotValidToken(newSession, res);
                 }
               }
@@ -103,13 +105,12 @@ exports.createSession = function createSession(req, res) {
           else {
             // access token was found locally
             // creating new valid session
+            logger.debug('Token %s found locally in database ',newSession.access_token);
             saveSessionForValidToken(newSession, res);
             // token is valid in request
             // trying to remove ipLimitations for  remote ip address from request
             db.authIpLimitations.remove(remoteIp).then(function (removed) {
-              if (removed) {
-                logger.info('Limitations for ip ' + remoteIp + ' was removed.')
-              }
+
             }, function (err) {
               logger.error('Error occurred , while trying to remove ip limitations.' + err);
             });
@@ -123,11 +124,14 @@ exports.createSession = function createSession(req, res) {
         });
       } else {
         // token was not found in the request body
+          logger.debug('Access Token not found in request');
         saveSessionForNotValidToken(newSession, res);
       }
     }, function (err) {
       logger.debug('ApiKey validation failed. ApiKey : ' + apiKey);
       res.status(403).json({status: 'error', message: err});
+    }).catch(function (err) {
+      throw err;
     });
   } catch (e) {
     logger.warn('createSession exception occured: ', e);
@@ -145,8 +149,10 @@ function saveSessionForValidToken(newSession, res) {
         apikey: newSession.apikey,
         tag: 'mobilelogger',
         token_access: 1,
+          node:newSession.node,
         devid: newSession.devid
       }, '00MasecR3t', {expiresIn: 60}); // valid only 1 minute
+
       res.status(201).json({status: 'success', data: {_id: authToken}});
     }, function (err) {
       logger.error('Error occurred when trying to create new session for valid token.Error :' + err);
@@ -164,7 +170,12 @@ function saveSessionForNotValidToken(newSession, res) {
     
     let validation_query = {remote_ip: newSession.remote_ip};
     db.authIpLimitations.get(validation_query).then(function (limitations) {
-      if ((!limitations && newSession.remote_ip !== undefined && newSession.remote_ip !== null ) || limitations[0].doc_limit < nonAuthLimitation) {
+      logger.debug('Checking remote ip in database for limitations');
+      logger.debug('Query result '+JSON.stringify(limitations));
+     
+
+
+      if ((!limitations[0] && newSession.remote_ip !== undefined && newSession.remote_ip !== null ) || (limitations[0].doc_limit < nonAuthLimitation)) {
         // Limitation do not exists or number of uploaded documents less then limitation on it
         if (!limitations) {
           let newLimitation = {
@@ -188,6 +199,7 @@ function saveSessionForNotValidToken(newSession, res) {
             token_access: 0,
             devid: newSession.devid
           }, '00MasecR3t', {expiresIn: 60}); // valid only 1 minute
+
           res.status(201).json({status: 'success', data: {_id: authToken}});
         }, function (err) {
           logger.error('Error occurred when trying to create new session for NOT valid token.Error :' + err);
@@ -211,7 +223,7 @@ function saveSessionForNotValidToken(newSession, res) {
 exports.validateSession = function validateSession(req, res, next) {
   try {
     
-    let apiKey = req.body.f || req.headers.apiKey || req.headers.apikey || req.body.apiKey;
+    let apiKey = req.body.f || req.headers.apiKey || req.headers.apikey || req.body.apiKey || req.body.api_key || req.headers.api_key;
     let sessionId = req.body.s || req.headers.sessionId || req.headers.sessionid || req.body.sessionId;
     let devId = req.body.h || req.headers.hwId || req.headers.hwid || req.body.hwId;
     let data = req.body.d || req.body.events;
@@ -234,6 +246,7 @@ exports.validateSession = function validateSession(req, res, next) {
           req.body.tokenAccess = decoded.token_access;
           req.body.sessionId = decoded._id;
           req.body.devid = decoded.devid;
+          req.body.node=decoded.node;
           next();
         }
       });
