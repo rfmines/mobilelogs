@@ -88,9 +88,9 @@ exports.createSession = function createSession(req, res) {
                     // This is successful auth event
                     // Have to delete limitations for this remoteIp address , if they are exists
                     db.authIpLimitations.remove(remoteIp).then(function (removed) {
-                      if (removed) {
-                        logger.info('Limitations for ip ' + remoteIp + ' was removed.')
-                      }
+                      // if limitations for remote IP was in database
+                      // App removed it , because of success authorization from this ip
+
                     }, function (err) {
                       logger.error('Error occurred , while trying to remove ip limitations.' + err);
                     })
