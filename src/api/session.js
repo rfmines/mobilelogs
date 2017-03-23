@@ -53,31 +53,35 @@ exports.createSession = function createSession(req, res) {
         // access token exists in request body , need to check it
         logger.debug('Tryin to validate token %s for node %s',accessToken,node);
         db.accessTokens.get({access_token: accessToken}).then(function (accessToken) {
-          if (!accessToken) {
+          if (accessToken.length === 0) {
             logger.debug('Token %s not found in local db, validating it on webapi',newSession.access_token);
             // Access token not found locally . Need to validate it on WebApi
-            let webApiAddress = dictionary.webApiNodeAddresses[node.toLowerCase()];
-            let webApiPath = dictionary.webApiValidationPaths[appName.toLowerCase()];
-            if (!webApiAddress) {
-              // old format without node Name , all request must be forwarded on prod
-              webApiAddress = dictionary.webApiNodeAddresses.production;
+            let webApiAddress,webApiPath;
+            if (node){
+              webApiAddress = dictionary.webApiNodeAddresses[node.toLowerCase()];
             }
-            if (!webApiPath) {
+            if (appName){
+              webApiPath = dictionary.webApiValidationPaths[appName.toLowerCase()];
+            }
+            if (!webApiAddress){
+              // old format without node Name , all request must be forwarded on prod
+              webApiAddress = dictionary.webApiNodeAddresses.production;}
+            if (!webApiPath){
               // mobile app has a lot of possible names
               // also mobile team from time to time for testing purposes changes app name
               // mostly all these names is for mobile app
-              webApiPath = dictionary.webApiValidationPaths.mobile;
-            }
-            let validationUrl = webApiAddress + webApiPath + accessToken;
+              webApiPath = dictionary.webApiValidationPaths.mobile;}
+
+            let validationUrl = webApiAddress + webApiPath + newSession.access_token;
             request(validationUrl, function (err, response) {
               if (err) {
                 throw err;
               } else {
                 if (response.statusCode === 200) {
-                  logger.debug('Webapi approved token %s ',accessToken);
+                  logger.debug('Webapi approved token %s ',newSession.access_token);
                   // Token is valid , it must be saved locally
                   db.accessTokens.create({
-                    devid: devId, access_token: accessToken
+                    devid: devId, access_token: newSession.access_token
                   }).then(function (success) {
                     // Token saved , creating new session for valid token
                     saveSessionForValidToken(newSession, res);
@@ -152,7 +156,7 @@ function saveSessionForValidToken(newSession, res) {
           node:newSession.node,
         devid: newSession.devid
       }, '00MasecR3t', {expiresIn: 60}); // valid only 1 minute
-
+      logger.debug('New session was created for token %s. Session_id %s',newSession.access_token,sessionDocument._id);
       res.status(201).json({status: 'success', data: {_id: authToken}});
     }, function (err) {
       logger.error('Error occurred when trying to create new session for valid token.Error :' + err);
@@ -170,14 +174,12 @@ function saveSessionForNotValidToken(newSession, res) {
     
     let validation_query = {remote_ip: newSession.remote_ip};
     db.authIpLimitations.get(validation_query).then(function (limitations) {
-      logger.debug('Checking remote ip in database for limitations');
-      logger.debug('Query result '+JSON.stringify(limitations));
-     
-
-
+      logger.debug('Checking remote ip %s in database for limitations',newSession.remote_ip );
+   
       if ((!limitations[0] && newSession.remote_ip !== undefined && newSession.remote_ip !== null ) || (limitations[0].doc_limit < nonAuthLimitation)) {
         // Limitation do not exists or number of uploaded documents less then limitation on it
         if (!limitations) {
+          logger.debug('Limitations for IP %s was not found.Creating new session ',newSession.remote_ip);
           let newLimitation = {
             devid: newSession.devid,
             remote_ip: newSession.remote_ip,
@@ -185,7 +187,7 @@ function saveSessionForNotValidToken(newSession, res) {
           };
           db.authIpLimitations.create(newLimitation).then(function (newLimitation) {
           }, function (err) {
-            logger.error('Error occurred while trying to save new limitations for IP address.');
+            logger.error('Error occurred while trying to save new limitations for IP address %s. ',newSession.remote_ip);
             logger.error('Document :' + JSON.stringify(newLimitation));
             logger.error('Error :' + err);
           })

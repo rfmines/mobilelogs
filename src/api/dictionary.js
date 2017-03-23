@@ -103,12 +103,12 @@ const possibleDataInEvents = {
 };
 
 const webApiNodeAddresses = {
-  production :'apiv2.ooma.com',
-  sandbox:'api-sandbox.ooma.com',
-  cert : 'api-qa.ooma.com',
-  alpha : 'api-alpha.ooma.com',
-  mera : 'api-mera.ooma.com',
-  simon : 'api.simon.ooma.com'
+  production :'http://apiv2.ooma.com',
+  sandbox:'http://api-sandbox.ooma.com',
+  cert : 'http://api-qa.ooma.com',
+  alpha : 'http://api-alpha.ooma.com',
+  mera : 'http://api-mera.ooma.com',
+  simon : 'http://api.simon.ooma.com'
 };
 
 const webApiValidationPaths = {
