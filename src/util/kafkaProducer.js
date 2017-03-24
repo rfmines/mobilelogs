@@ -16,6 +16,7 @@ function sendEventToKafka(data) {
 
             messages:data}
         ];
+        try {
         producer.send(payload, function (err, response) {
             if (err) {
                 //trying to resend due sometimeouts or old metadata errors
@@ -32,6 +33,10 @@ function sendEventToKafka(data) {
 
             }
         })
+        } catch (e){
+            logger.error('Exception occurred in kafka producer.Error : ',e);
+            reject(e);
+        }
 
     })
 

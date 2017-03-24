@@ -1,6 +1,7 @@
 
 let config = {
     app_name: "CSL",
+    env : process.env.env || 'production',
     storeInMongo:true,
     database: {
         connectionString: process.env.CSL_DB_URL,
