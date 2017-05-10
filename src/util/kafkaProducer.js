@@ -22,10 +22,11 @@ function sendEventToKafka(data) {
                 //trying to resend due sometimeouts or old metadata errors
                 producer.send(payload,function (err2,result) {
                     if(err2){
+                        logger.warn('Send event to kafka was success only from second try!First try error :'+err);
+                        logger.warn('Send event to kafka was success only from second try!Second try error :'+err2);
                         reject(err)
                     } else {
                         logger.warn('Send event to kafka was success only from second try!First try error :'+err);
-                        logger.warn('Send event to kafka was success only from second try!Second try error :'+err2);
                         resolve(data.length);
                     }
                 })
