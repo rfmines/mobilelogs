@@ -113,7 +113,7 @@ exports.saveEvents = function saveEvents(req, res) {
         if (eventsToKafka.length !== 0){
             logger.debug('Sending '+eventsToKafka.length+' events to kafka.SessionId was '+req.body.sessionId)
         sendCSLEventToKafka(eventsToKafka).then(function (success) {
-
+            logger.debug('Sent %s messages to kafka.',success)
         }, function (err) {
             logger.error(err);
         });
