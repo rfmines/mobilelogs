@@ -120,7 +120,7 @@ exports.newapp = function newapp(req, res, next) {
     if (auth == undefined)  {
         res.redirect('/login');
         return;
-    };
+    }
 
     if (req.method == "GET") {
         res.render('pages/newapp.ejs', {authenticated: _S(auth), userid: _S(req.session.userid), 
@@ -130,9 +130,9 @@ exports.newapp = function newapp(req, res, next) {
     } else {
         res.status(404);
     }
-}
+};
 
 exports.check = function check(req, res, next) {
     res.status(200).send('200 OK\r\n');
-}
+};
 

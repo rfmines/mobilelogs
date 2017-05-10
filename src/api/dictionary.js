@@ -103,12 +103,24 @@ const possibleDataInEvents = {
 };
 
 const webApiNodeAddresses = {
-  production :'apiv2.ooma.com',
-  sandbox:'api-sandbox.ooma.com',
-  cert : 'api-qa.ooma.com',
-  alpha : 'api-alpha.ooma.com',
-  mera : 'api-mera.ooma.com',
-  simon : 'api.simon.ooma.com'
+  production :'http://apiv2.ooma.com',
+  sandbox:'http://api-sandbox.ooma.com',
+  cert : 'http://api-qa.ooma.com',
+  alpha : 'http://api-alpha.ooma.com',
+  mera : 'http://api-mera.ooma.com',
+  simon : 'http://api.simon.ooma.com',
+  szeto : 'http://api-szeto.ooma.com',
+  chen : 'http://api-chen.ooma.com',
+  wong : 'http://api-wong.ooma.com',
+  'apiv2.ooma.com':'http://apiv2.ooma.com',
+  'api-sandbox.ooma.com':'http://api-sandbox.ooma.com',
+  'api-qa.ooma.com' : 'http://api-qa.ooma.com',
+  'api-alpha.ooma.com' : 'http://api-alpha.ooma.com',
+  'api-mera.ooma.com' : 'http://api-mera.ooma.com',
+  'api-simon.ooma.com' : 'http://api.simon.ooma.com',
+  'api-szeto.ooma.com' : 'http://api-szeto.ooma.com',
+  'api-chen.ooma.com' : 'http://api-chen.ooma.com',
+  'api-wong.ooma.com' : 'http://api-wong.ooma.com'
 };
 
 const webApiValidationPaths = {
@@ -121,3 +133,4 @@ exports.htmlBodyValues = htmlBodyValues;
 exports.possibleDataInEvents = possibleDataInEvents;
 exports.webApiNodeAddresses = webApiNodeAddresses;
 exports.webApiValidationPaths = webApiValidationPaths;
+

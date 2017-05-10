@@ -10,9 +10,13 @@ producer.on('ready', function () {
 function sendEventToKafka(data) {
     return new Promise(function (resolve, reject) {
         let payload = [
-            {topic:'mobile-logs',
+            {
+                //topic:'mobile-logs',
+                topic:'mobile-logs-new',
+
             messages:data}
         ];
+        try {
         producer.send(payload, function (err, response) {
             if (err) {
                 //trying to resend due sometimeouts or old metadata errors
@@ -25,12 +29,14 @@ function sendEventToKafka(data) {
                 })
             }
             else {
-                logger.debug('Kafka response ' + JSON.stringify(response));
-                logger.debug('Event sent!' + JSON.stringify(data));
                 resolve(data);
 
             }
         })
+        } catch (e){
+            logger.error('Exception occurred in kafka producer.Error : ',e);
+            reject(e);
+        }
 
     })
 

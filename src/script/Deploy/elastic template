@@ -1,0 +1,258 @@
+curl -XPUT 'localhost:9200/_template/csl?pretty' -H 'Content-Type: application/json' -d'
+{
+  "template": "csl*",
+  "settings": {
+    "number_of_shards": 1
+  },
+  "mappings" : {
+      "CSL_DB" : {
+        "properties" : {
+          "@timestamp" : {
+            "type" : "date",
+            "format" : "strict_date_optional_time||epoch_millis"
+          },
+          "@version" : {
+            "type" : "string"
+          },
+          "app_name" : {
+            "type" : "string"
+          },
+          "app_version" : {
+            "type" : "string"
+          },
+          "call_direction" : {
+            "type" : "string"
+          },
+          "call_duration" : {
+            "type" : "string"
+          },
+          "call_id" : {
+            "type" : "string"
+          },
+          "client_date" : {
+            "properties" : {
+              "$date" : {
+                "type" : "date",
+                "format" : "strict_date_optional_time||epoch_millis"
+              }
+            }
+          },
+          "created_date" : {
+            "properties" : {
+              "$date" : {
+                "type" : "date",
+                "format" : "strict_date_optional_time||epoch_millis"
+              }
+            }
+          },
+          "db_id" : {
+            "type" : "string"
+          },
+          "devManufacturer" : {
+            "type" : "string"
+          },
+          "devid" : {
+            "type" : "string"
+          },
+          "event_data" : {
+            "properties" : {
+              "label" : {
+                "type" : "string"
+              },
+              "value" : {
+                "type" : "string"
+              }
+            }
+          },
+          "event_data_obj" : {
+            "properties" : {
+              "alert_text" : {
+                "type" : "string"
+              },
+              "alert_title" : {
+                "type" : "string"
+              },
+              "allocated_memory" : {
+                "type" : "string"
+              },
+              "anonymous_call" : {
+                "type" : "string"
+              },
+              "app_size" : {
+                "type" : "string"
+              },
+              "bit_rate" : {
+                "type" : "string"
+              },
+              "call_end_information" : {
+                "type" : "string"
+              },
+              "call_end_status" : {
+                "type" : "string"
+              },
+              "carrier_name" : {
+                "type" : "string"
+              },
+              "codec_name" : {
+                "type" : "string"
+              },
+              "complexity" : {
+                "type" : "string"
+              },
+              "constant_bit_rate" : {
+                "type" : "string"
+              },
+              "control_name" : {
+                "type" : "string"
+              },
+              "current_battery_level" : {
+                "type" : "string"
+              },
+              "error_code" : {
+                "type" : "string"
+              },
+              "error_message" : {
+                "type" : "string"
+              },
+              "free_memory" : {
+                "type" : "string"
+              },
+              "ip_is_hardcoded" : {
+                "type" : "string"
+              },
+              "login_result" : {
+                "type" : "string"
+              },
+              "media_codec_info" : {
+                "type" : "string"
+              },
+              "media_packet_discarded" : {
+                "type" : "string"
+              },
+              "media_packet_duplicated" : {
+                "type" : "string"
+              },
+              "media_packet_loss" : {
+                "type" : "string"
+              },
+              "media_packet_reorder" : {
+                "type" : "string"
+              },
+              "media_state" : {
+                "type" : "string"
+              },
+              "media_type" : {
+                "type" : "string"
+              },
+              "network_status" : {
+                "type" : "string"
+              },
+              "new_network_status" : {
+                "type" : "string"
+              },
+              "old_network_status" : {
+                "type" : "string"
+              },
+              "parameter_info" : {
+                "type" : "string"
+              },
+              "remote_number" : {
+                "type" : "string"
+              },
+              "response_data" : {
+                "type" : "string"
+              },
+              "response_error" : {
+                "type" : "string"
+              },
+              "sample_rate" : {
+                "type" : "string"
+              },
+              "screen_name" : {
+                "type" : "string"
+              },
+              "server_address" : {
+                "type" : "string"
+              },
+              "server_type" : {
+                "type" : "string"
+              },
+              "sip_call_status" : {
+                "type" : "string"
+              },
+              "sip_deinitialization_result" : {
+                "type" : "string"
+              },
+              "sip_initialization_result" : {
+                "type" : "string"
+              },
+              "sip_registration_result" : {
+                "type" : "string"
+              },
+              "sip_registration_status" : {
+                "type" : "string"
+              },
+              "transport_hostname" : {
+                "type" : "string"
+              },
+              "transport_state" : {
+                "type" : "string"
+              },
+              "transport_status" : {
+                "type" : "string"
+              },
+              "voice_activity_detector" : {
+                "type" : "string"
+              },
+              "warning_message" : {
+                "type" : "string"
+              }
+            }
+          },
+          "event_name" : {
+            "type" : "string"
+          },
+          "event_source" : {
+            "type" : "string"
+          },
+          "event_type" : {
+            "type" : "string"
+          },
+          "hw_info" : {
+            "type" : "string"
+          },
+          "local_ip" : {
+            "type" : "string"
+          },
+          "os_name" : {
+            "type" : "string"
+          },
+          "os_version" : {
+            "type" : "string"
+          },
+          "phone_ext" : {
+            "type" : "string"
+          },
+          "phone_number" : {
+            "type" : "string"
+          },
+          "remote_ip" : {
+            "type" : "string"
+          },
+          "remote_number" : {
+            "type" : "string"
+          },
+          "sessionid" : {
+            "type" : "string"
+          },
+          "tag" : {
+            "type" : "string"
+          },
+          "tags" : {
+            "type" : "string"
+          }
+        }
+      }
+    }
+}
+'

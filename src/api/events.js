@@ -2,6 +2,7 @@ let logger = require('./../util/logger').getlogger('api.events');
 let db = require('./../db');
 let decode = require('./decode');
 let moment = require('moment');
+let config = require('./../config');
 let sendCSLEventToKafka = require('./../util/kafkaProducer').kafkaLogger;
 
 exports.saveEvents = function saveEvents(req, res) {
@@ -11,6 +12,7 @@ exports.saveEvents = function saveEvents(req, res) {
         let tokenAccess = req.body.tokenAccess;
         let sessionId = req.body.sessionId;
         let devId = req.body.devid;
+        let node = req.body.node;
         let remote_ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
         // request is valid and all fields are set
         // to improve performance we can free the client
@@ -20,7 +22,6 @@ exports.saveEvents = function saveEvents(req, res) {
             if (typeof event === 'string') {
                 // currently mobile team has problems with it
                 // sometimes they are sent string instead of object
-                logger.debug('Converting string event to object');
                 event = JSON.parse(event);
             }
 
@@ -31,17 +32,18 @@ exports.saveEvents = function saveEvents(req, res) {
             normalizedEvent.remote_ip = remote_ip;
             normalizedEvent.devid = devId;
             normalizedEvent.sessionid = sessionId;
+            normalizedEvent.node=node;
             if (!normalizedEvent.tag || normalizedEvent.tag.toLowerCase() !== 'test') {
-                logger.debug(JSON.stringify(normalizedEvent));
+                if (config.storeInMongo) {
                 db.events.create(normalizedEvent).then(function (newEvent) {
 
                         // event saved
                         // we have to increase counter for clients without accessToken
                         if (tokenAccess !== 1) {
-
+                            let updateOptions = {$inc: {doc_limit: 1}};
+                            if (devId){updateOptions.devid=devId};
                             db.authIpLimitations.update({remote_ip: remote_ip}, {
-                                $inc: {doc_limit: 1},
-                                devid: devid
+                                updateOptions
                             }).then(function (done) {
                                 // limitation incremented
                             }, function (err) {
@@ -56,43 +58,52 @@ exports.saveEvents = function saveEvents(req, res) {
                         // mobile client sometimes resend data , because did not get any response last time
                         // (mostly because of network issues)
                         logger.warn('Error occurred while trying to save event.' + err);
-                        logger.debug('Event :' + JSON.stringify(normalizedEvent));
+
                     }
                 );
+                }
                 // converting date to make kafka/elastic recognize it
                 normalizedEvent.created_date = {"$date": moment(normalizedEvent.created_date).format("YYYY-MM-DDTHH:mm:ss.SSS")};
                 if (!normalizedEvent.protocol_version){
                     normalizedEvent.client_date = {"$date": moment(normalizedEvent.client_date).format("YYYY-MM-DDTHH:mm:ss.SSS")};
+                    normalizedEvent.log_date =  moment(normalizedEvent.created_date.$date).format("YYYY-MM-DDTHH:mm:ss.SSSZZ");
                 } else {
                     normalizedEvent.client_date = {"$date": moment(parseInt(normalizedEvent.client_date)).format("YYYY-MM-DDTHH:mm:ss.SSS")};
+                    normalizedEvent.log_date =  moment(normalizedEvent.created_date.$date).format("YYYY-MM-DDTHH:mm:ss.SSSZZ");
                 }
+                // adding analog of event_data array in OBJECT style
+                // e.g. was event_data:[{label:a,value:1},{label:b,value:2}]
+                // in object format it will be event_data:{a:1,b:2}
+                normalizedEvent.event_data_obj = eventDataToObject(normalizedEvent.event_data);
 
                 eventsToKafka.push(JSON.stringify(normalizedEvent));
             } else {
-                // save in collections for test events
-                db.events.create_test(normalizedEvent).then(function (newEvent) {
-                    // event saved
-                    // we have to increase counter for clients without accessToken
+                if (config.storeInMongo) {
+                    // save in collections for test events
+                    db.events.create_test(normalizedEvent).then(function (newEvent) {
+                        // event saved
+                        // we have to increase counter for clients without accessToken
 
-                    if (tokenAccess !== 1) {
+                        if (tokenAccess !== 1) {
 
-                        db.authIpLimitations.update({remote_ip: remote_ip}, {
-                            $inc: {doc_limit: 1},
-                            devid: devid
-                        }).then(function (done) {
-                            // limitation incremented
-                        }, function (err) {
-                            logger.error('Error occurred while trying to increment IP limitations.Error:' + err);
-                        });
+                            db.authIpLimitations.update({remote_ip: remote_ip}, {
+                                $inc: {doc_limit: 1},
+                                devid: devid
+                            }).then(function (done) {
+                                // limitation incremented
+                            }, function (err) {
+                                logger.error('Error occurred while trying to increment IP limitations.Error:' + err);
+                            });
 
-                    }
-                }, function (err) {
-                    // this can happen because DB handles duplicates by compound unique index
-                    // mobile client sometimes resend data , because did not get any response last time
-                    // (mostly because of network issues)
-                    logger.warn('Error occurred while trying to save event.' + err);
-                    logger.debug('Event :' + JSON.stringify(normalizedEvent));
-                });
+                        }
+                    }, function (err) {
+                        // this can happen because DB handles duplicates by compound unique index
+                        // mobile client sometimes resend data , because did not get any response last time
+                        // (mostly because of network issues)
+                        logger.warn('Error occurred while trying to save event.' + err);
+
+                    });
+                }
             }
         }
         // to reduce io operations we send all events to kafka/elasitc
@@ -100,9 +111,9 @@ exports.saveEvents = function saveEvents(req, res) {
         // in ONE request to kafka
         //  this part of code will be called when loop will be finished
         if (eventsToKafka.length !== 0){
-            logger.debug('Sending '+eventsToKafka.length+' events to kafka');
+            logger.debug('Sending '+eventsToKafka.length+' events to kafka.SessionId was '+req.body.sessionId)
         sendCSLEventToKafka(eventsToKafka).then(function (success) {
-            logger.debug(JSON.stringify(success));
+
         }, function (err) {
             logger.error(err);
         });
@@ -156,6 +167,7 @@ function normalizeEvent(event, req) {
                     for (let iterator in event[key]) {
                         // iterating over event_data array inside event to handle
                         let eventDataElement = event[key][iterator];
+
                         if (eventDataElement.label.toUpperCase() === decode.labelDic[5].name.toUpperCase() || // 'CrashName'
                             eventDataElement.label.toUpperCase() === decode.labelDic[6].name.toUpperCase() || // 'CrashReason'
                             eventDataElement.label.toUpperCase() === decode.labelDic[19].name.toUpperCase() || // 'Remote number'
@@ -164,7 +176,8 @@ function normalizeEvent(event, req) {
                             eventDataElement.label.toUpperCase() === decode.labelDic[46].name.toUpperCase() || // 'CallId'
                             eventDataElement.label.toUpperCase() === decode.labelDic[62].name.toUpperCase() || // 'Call type'
                             eventDataElement.label.toUpperCase() === decode.labelDic[105].name.toUpperCase() || // 'CrashId'
-                            eventDataElement.label.toUpperCase() === decode.labelDic[124].name.toUpperCase()  // 'Remote notify type'
+                            eventDataElement.label.toUpperCase() === decode.labelDic[124].name.toUpperCase() || // 'Remote notify type'
+                            eventDataElement.label.toUpperCase() === 'LOCATIONS'
                         ) {
                             // on iteration field to move was found
                             //handling (adding in as main field to event root
@@ -265,4 +278,14 @@ function normalizeEvent(event, req) {
         }
     }
     return handledEvent;
+}
+
+function eventDataToObject(eventDataArray){
+    let eventDataObj={};
+    for (let iterator in eventDataArray){
+        let label = eventDataArray[iterator].label;
+        let value = eventDataArray[iterator].value;
+        eventDataObj[label] = value;
+    }
+    return eventDataObj;
 }

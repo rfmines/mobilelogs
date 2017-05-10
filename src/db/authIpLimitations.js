@@ -1,13 +1,14 @@
-var mongoose = require('mongoose');
-var db = require('./connection').db;
-var Schema = mongoose.Schema;
-var Non_Auth_User_Limitation_Schema = Schema({
+let mongoose = require('mongoose');
+let db = require('./connection').db;
+let Schema = mongoose.Schema;
+let logger = require('./../util/logger').getlogger('db.authLimitations');
+let Non_Auth_User_Limitation_Schema = Schema({
   devid: String,
   remote_ip: String,
   doc_limit: Number
 },{timestamps:true, autoIndex:false});
 
-var authLimits = db.model('AuthLimitation', Non_Auth_User_Limitation_Schema);
+let authLimits = db.model('AuthLimitation', Non_Auth_User_Limitation_Schema);
 
 module.exports = {
   get: function (query) {
@@ -38,14 +39,16 @@ module.exports = {
     return new Promise(function (resolve, reject) {
       authLimits.remove({remote_ip: remote_ip}, function (err) {
         if (err) reject( err );
+
         resolve( 'ok' );
       });
     });
   },
   update: function(query , updateOptions){
     return new Promise(function (resolve, reject) {
-      authLimits.findOneAndUpdate(query,updateOptions, function (err) {
+      authLimits.findOneAndUpdate(query,updateOptions, function (err,response) {
         if (err) reject( err );
+
         resolve( 'ok' );
       });
     });
