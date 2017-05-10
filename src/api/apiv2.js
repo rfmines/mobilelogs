@@ -1,5 +1,5 @@
 /*
-This is new api requested by mobile team . Bug
+This is new api requested by mobile team
  */
 let express = require('express');
 let logger = require('./../util/logger').getlogger('api.apiv2');
