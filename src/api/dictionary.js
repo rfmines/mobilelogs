@@ -120,13 +120,16 @@ const webApiNodeAddresses = {
   'api-simon.ooma.com' : 'http://api.simon.ooma.com',
   'api-szeto.ooma.com' : 'http://api-szeto.ooma.com',
   'api-chen.ooma.com' : 'http://api-chen.ooma.com',
-  'api-wong.ooma.com' : 'http://api-wong.ooma.com'
+  'api-wong.ooma.com' : 'http://api-wong.ooma.com',
+  'api-frame.ooma.com' : 'http://api-frame.ooma.com',
+  'api.hms.ooma.com' : 'http://api.hms.ooma.com'
+
 };
 
 const webApiValidationPaths = {
-  office : '/v1/preferences?access_token=',
-  homemonitoring : '/v1/home_monitoring/base/status?access_token=',
-  mobile : '/v1/res/preferences/system?access_token='
+    office : '/v1/preferences?access_token=',
+    oomahomemonitoring : '/v1/account/address?access_token=',
+    mobile : '/v1/res/preferences/system?access_token='
 };
 
 exports.htmlBodyValues = htmlBodyValues;
