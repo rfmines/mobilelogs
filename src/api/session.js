@@ -7,11 +7,11 @@ let dictionary = require('./dictionary');
 let config = require('./../config');
 let nonAuthLimitation;
 if (config.env ==='devel'){
-    logger.debug('Setting nonauth document limitation ='+1000+' for env = '+config.env);
    nonAuthLimitation = 100000000000;
+    logger.debug('Setting nonauth document limitation ='+nonAuthLimitation+' for env = '+config.env);
 } else{
-    logger.debug('Setting nonauth document limitation ='+1000+' for env = '+config.env);
    nonAuthLimitation = 1000; // number of events(document) allowed to upload without token for IP address
+    logger.debug('Setting nonauth document limitation ='+nonAuthLimitation+' for env = '+config.env);
 }
 
 // Create temporary session, output key is used to validate further requests
