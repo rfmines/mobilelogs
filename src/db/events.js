@@ -12,6 +12,7 @@ let eventSchema = mongoose.Schema({
   event_data: [], // {  label: String, value: String }
   tag: String,
   db_id: String,
+  customer_pk: String,
   phone_number: String,
   phone_ext: String,
   remote_number: String,

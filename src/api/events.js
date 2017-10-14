@@ -5,6 +5,8 @@ let moment = require('moment');
 let config = require('./../config');
 let sendCSLEventToKafka = require('./../util/kafkaProducer').kafkaLogger;
 
+// TODO : add replication between old collection and new one
+
 exports.saveEvents = function saveEvents(req, res) {
     try {
         let eventsToKafka = [];
@@ -25,7 +27,7 @@ exports.saveEvents = function saveEvents(req, res) {
                 event = JSON.parse(event);
             }
 
-            var normalizedEvent = normalizeEvent(event, req);
+            let normalizedEvent = normalizeEvent(event, req);
             // req needs for old format parsing , because array in old format contain only unique data
             // static fields like phone_number, devid etc are encoded in request body
             normalizedEvent.created_date = Date.now();
