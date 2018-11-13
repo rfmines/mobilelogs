@@ -6,7 +6,7 @@ deployment = {}
 deployment.deployment_start = function(){
     try {
         db = connect("localhost:27017/express")
-	db.createCollection('session');
+	    db.createCollection('session');
         print('Session collection created in express DB')
         db.createUser({"user":"express","pwd":"ooma123","customData":{"Description":"JS Express user"},"roles":[{role:"readWrite",db:"express"}]});
         print('Express user created')

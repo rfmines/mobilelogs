@@ -58,18 +58,21 @@ app.get('/signup', routes.signup);
 app.get('/logout', routes.logout);
 app.get('/about', routes.about);
 app.get('/console', routes.console);
-app.get('/sessions/:apikey', routes.sessions);
-app.get('/devices/:apikey', routes.devices);
-app.get('/log/:apikey', routes.log);
-
 app.get('/newapp', routes.newapp);
-app.post('/newapp', routes.newapp);
 
+app.post('/newapp', routes.newapp);
 app.post('/login', routes.login);
 app.post('/signup', routes.signup);
 
+
 var apiv1 = require('./api/apiv1');
 app.use('/api/v1', apiv1);
+// new format of request
+// implementation of this new format still supports old version(v1) too
+// but better structured (split into files based on logical usage)
+
+var apiv2 = require('./api/apiv2');
+app.use('/api/v2', apiv2);
 
 const apiEventTypes = require('./routes/event_types');
 app.use('/api/v1/event_types', apiEventTypes)

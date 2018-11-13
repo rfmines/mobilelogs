@@ -9,7 +9,8 @@ var config = {
       db:       'applog_test',
       user:     'applog',
       password: 'ooma123'
-    }
+    },
+    showQuery : true
   },
   production: {
     //mongodb connection settings
@@ -19,6 +20,13 @@ var config = {
       db:       'applog',
       user:     'applog',
       password: 'ooma123'
+    },
+    showQuery : false
+  },
+  connectionAdditionalOptions : {
+    server : {
+      reconnectTries:3600, // default 30
+      reconnectInterval:5000 // default 1000
     }
   }
 };

@@ -1,5 +1,5 @@
 'use strict';
-var htmlBodyValues = {
+const htmlBodyValues = {
         apikey: 'f',
         sessionid: 's',
         devid: 'h',
@@ -24,7 +24,8 @@ var htmlBodyValues = {
         event_type: null
     };
 
-var possibleDataInEvents = {
+    // TODO : Base on this dictionary create on app start dictionaries with all events and its measurements
+const possibleDataInEvents = {
     // numbers in this arrays are links to labels dictionary in decode.js file
     'APP_START':[0,52],
     'APP_BG':[],
@@ -101,5 +102,38 @@ var possibleDataInEvents = {
     'CALL_MISSED':[19,0,46,52]
 };
 
+const webApiNodeAddresses = {
+  production :'http://apiv2.ooma.com',
+  sandbox:'http://api-sandbox.ooma.com',
+  cert : 'http://api-qa.ooma.com',
+  alpha : 'http://api-alpha.ooma.com',
+  mera : 'http://api-mera.ooma.com',
+  simon : 'http://api.simon.ooma.com',
+  szeto : 'http://api-szeto.ooma.com',
+  chen : 'http://api-chen.ooma.com',
+  wong : 'http://api-wong.ooma.com',
+  'apiv2.ooma.com':'http://apiv2.ooma.com',
+  'api-sandbox.ooma.com':'http://api-sandbox.ooma.com',
+  'api-qa.ooma.com' : 'http://api-qa.ooma.com',
+  'api-alpha.ooma.com' : 'http://api-alpha.ooma.com',
+  'api-mera.ooma.com' : 'http://api-mera.ooma.com',
+  'api-simon.ooma.com' : 'http://api.simon.ooma.com',
+  'api-szeto.ooma.com' : 'http://api-szeto.ooma.com',
+  'api-chen.ooma.com' : 'http://api-chen.ooma.com',
+  'api-wong.ooma.com' : 'http://api-wong.ooma.com',
+  'api-frame.ooma.com' : 'http://api-frame.ooma.com',
+  'api.hms.ooma.com' : 'http://api.hms.ooma.com'
+
+};
+
+const webApiValidationPaths = {
+    office : '/v1/preferences?access_token=',
+    oomahomemonitoring : '/v1/account/address?access_token=',
+    mobile : '/v1/res/preferences/system?access_token='
+};
+
 exports.htmlBodyValues = htmlBodyValues;
 exports.possibleDataInEvents = possibleDataInEvents;
+exports.webApiNodeAddresses = webApiNodeAddresses;
+exports.webApiValidationPaths = webApiValidationPaths;
+

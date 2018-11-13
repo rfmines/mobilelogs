@@ -64,6 +64,11 @@ var s = server.listen(http_port, function () {
     console.log("%s server is running on http port %d", instanceName, http_port);
 });
 
+server.on('error',function (err) {
+    logger.error('Server Exception occurred.');
+    logger.error(err);
+});
+
 /*Kill signal*/
 process.on('SIGTERM', function () {
     shutdown(s)
@@ -71,4 +76,9 @@ process.on('SIGTERM', function () {
 /* Ctrl-C */
 process.on('SIGINT', function () {
     shutdown(s)
+});
+
+process.on('uncaughtException', function (err) {
+    logger.error('Exception occurred.');
+    logger.error(err);
 });
